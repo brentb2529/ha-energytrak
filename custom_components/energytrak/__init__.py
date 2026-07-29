@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -9,7 +12,14 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EnergyTrakAuthError, EnergyTrakClient, EnergyTrakError
-from .const import CONF_API_KEY, CONF_EMAIL, CONF_REFRESH_TOKEN
+from .const import (
+    CONF_API_KEY,
+    CONF_EMAIL,
+    CONF_REFRESH_TOKEN,
+    DOMAIN,
+    IMAGE_DIR,
+    IMAGE_URL_BASE,
+)
 from .coordinator import EnergyTrakCoordinator
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
@@ -17,8 +27,27 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 type EnergyTrakConfigEntry = ConfigEntry[EnergyTrakCoordinator]
 
 
+async def _async_register_images(hass: HomeAssistant) -> None:
+    """Serve the generator artwork so entities can reference it by URL."""
+    if hass.data.get(f"{DOMAIN}_images_registered"):
+        return
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(
+                IMAGE_URL_BASE,
+                str(Path(__file__).parent / IMAGE_DIR),
+                # Artwork only changes when the integration is updated.
+                cache_headers=True,
+            )
+        ]
+    )
+    hass.data[f"{DOMAIN}_images_registered"] = True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: EnergyTrakConfigEntry) -> bool:
     """Set up EnergyTrak from a config entry."""
+    await _async_register_images(hass)
+
     client = EnergyTrakClient(
         async_get_clientsession(hass),
         entry.data[CONF_EMAIL],

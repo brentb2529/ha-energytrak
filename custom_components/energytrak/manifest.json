@@ -1,8 +1,13 @@
 {
   "domain": "energytrak",
   "name": "EnergyTrak",
-  "codeowners": ["@brentb2529"],
+  "codeowners": [
+    "@brentb2529"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/brentb2529/ha-energytrak",
   "integration_type": "hub",
   "iot_class": "cloud_polling",

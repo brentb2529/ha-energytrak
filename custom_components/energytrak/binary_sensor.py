@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EnergyTrakConfigEntry
+from .const import IMAGE_URL_BASE
 from .coordinator import EnergyTrakCoordinator
 from .entity import EnergyTrakEntity
 
@@ -34,11 +35,23 @@ def _has_fault(data: dict[str, Any]) -> bool:
     return str(fault).strip().lower() not in _NO_FAULT
 
 
+def _generator_picture(data: dict[str, Any]) -> str:
+    """Pick the artwork that matches the generator's current state."""
+    if not data:
+        return f"{IMAGE_URL_BASE}/generator_unavailable.svg"
+    if _has_fault(data):
+        return f"{IMAGE_URL_BASE}/generator_fault.svg"
+    if data.get("active"):
+        return f"{IMAGE_URL_BASE}/generator_running.svg"
+    return f"{IMAGE_URL_BASE}/generator_idle.svg"
+
+
 @dataclass(frozen=True, kw_only=True)
 class EnergyTrakBinarySensorDescription(BinarySensorEntityDescription):
     """Describes an EnergyTrak binary sensor."""
 
     value_fn: Callable[[dict[str, Any]], bool | None]
+    picture_fn: Callable[[dict[str, Any]], str | None] | None = None
 
 
 BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
@@ -47,6 +60,9 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         translation_key="running",
         device_class=BinarySensorDeviceClass.RUNNING,
         value_fn=lambda data: data.get("active"),
+        # Carries the generator artwork, so a picture-entity card (or the
+        # more-info dialog) shows the unit and its state at a glance.
+        picture_fn=_generator_picture,
     ),
     EnergyTrakBinarySensorDescription(
         key="grid_present",
@@ -128,3 +144,10 @@ class EnergyTrakBinarySensor(EnergyTrakEntity, BinarySensorEntity):
         """Return the current state."""
         value = self.entity_description.value_fn(self.site_data)
         return None if value is None else bool(value)
+
+    @property
+    def entity_picture(self) -> str | None:
+        """Return state-matched artwork, when this entity carries any."""
+        if self.entity_description.picture_fn is None:
+            return None
+        return self.entity_description.picture_fn(self.site_data)

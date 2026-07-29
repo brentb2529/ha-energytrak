@@ -44,3 +44,8 @@ DEVICE_COLLECTION: Final = "device"
 TOKEN_EXPIRY_MARGIN: Final = 60
 
 MANUFACTURER: Final = "EnergyTrak"
+
+# Generator artwork, served as static files so entities can point at it with
+# `entity_picture` and picture cards can use it directly.
+IMAGE_URL_BASE: Final = "/api/energytrak/static"
+IMAGE_DIR: Final = "images"

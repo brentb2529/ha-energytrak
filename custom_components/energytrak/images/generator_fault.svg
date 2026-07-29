@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170" width="220" height="170" role="img" aria-label="Generator fault">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <linearGradient id="vent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.40"/>
+    </filter>
+    <filter id="halo" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <ellipse cx="110" cy="92" rx="88" ry="62" fill="#ef4444" opacity="0.40" filter="url(#halo)"/>
+
+  <g filter="url(#shadow)">
+    <path d="M25 42 L195 42 L188 29 L32 29 Z" fill="url(#lid)" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect x="20" y="40" width="180" height="100" rx="10" fill="url(#body)" stroke="#64748b" stroke-width="2"/>
+    <rect x="32" y="46" width="100" height="6" rx="3" fill="#fff" opacity="0.55"/>
+    <rect x="40" y="58" width="140" height="56" rx="6" fill="url(#vent)" stroke="#334155" stroke-width="1.5"/>
+    <line x1="52" y1="72" x2="168" y2="72" stroke="#64748b" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <line x1="52" y1="86" x2="168" y2="86" stroke="#64748b" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <line x1="52" y1="100" x2="168" y2="100" stroke="#64748b" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <rect x="18" y="136" width="184" height="16" rx="3" fill="#1e293b"/>
+    <circle cx="180" cy="126" r="5" fill="#ef4444">
+      <animate attributeName="opacity" values="1;0.3;1" dur="0.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg>

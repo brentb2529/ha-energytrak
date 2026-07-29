@@ -57,6 +57,69 @@ Disabled by default (enable per entity if your unit reports them): per-phase
 voltages, currents, apparent/reactive power, power factor, fuel type,
 ignition, health, utility monitor string.
 
+## Dashboard card
+
+The integration ships generator artwork and hangs it off the **Running** binary
+sensor as `entity_picture`, so it changes with state on its own — idle, running
+(amber halo, pulsing green lamp), fault (red), unavailable. No custom frontend
+resource and nothing to install.
+
+Simplest card:
+
+```yaml
+type: picture-entity
+entity: binary_sensor.<your_generator>_running
+name: Generator
+show_state: true
+```
+
+Closer to a full status tile — artwork with live readings overlaid:
+
+```yaml
+type: picture-elements
+image_entity: binary_sensor.<your_generator>_running
+elements:
+  - type: state-label
+    entity: sensor.<your_generator>_status
+    style: {top: 12%, left: 50%, font-size: 15px, font-weight: 600,
+            text-transform: capitalize, text-shadow: 0 1px 3px rgba(0,0,0,.8)}
+  - type: state-label
+    entity: sensor.<your_generator>_battery_voltage
+    prefix: "Batt "
+    style: {top: 88%, left: 20%, font-size: 12px,
+            text-shadow: 0 1px 3px rgba(0,0,0,.8)}
+  - type: state-label
+    entity: sensor.<your_generator>_engine_hours
+    prefix: "Hrs "
+    style: {top: 88%, left: 50%, font-size: 12px,
+            text-shadow: 0 1px 3px rgba(0,0,0,.8)}
+  - type: state-label
+    entity: sensor.<your_generator>_grid_voltage
+    prefix: "Grid "
+    style: {top: 88%, left: 80%, font-size: 12px,
+            text-shadow: 0 1px 3px rgba(0,0,0,.8)}
+  - type: state-icon
+    entity: binary_sensor.<your_generator>_grid_power
+    style: {top: 12%, left: 88%, "--mdc-icon-size": 20px}
+```
+
+Pair it with a plain entities card for the exercise history:
+
+```yaml
+type: entities
+title: Generator
+entities:
+  - entity: sensor.<your_generator>_last_exercise
+  - entity: sensor.<your_generator>_last_exercise_duration
+  - entity: sensor.<your_generator>_next_exercise
+  - entity: binary_sensor.<your_generator>_fault
+  - entity: sensor.<your_generator>_active_alarms
+```
+
+The artwork lives in `custom_components/energytrak/images/` and is served at
+`/api/energytrak/static/generator_<state>.svg`, so you can reference a specific
+variant directly if you would rather not track state.
+
 ## About the multiple devices per site
 
 A site links to several device documents — typically `<id>-generator`,
