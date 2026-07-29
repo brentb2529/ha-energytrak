@@ -38,6 +38,11 @@ _TIMESTAMP_RE = re.compile(
 
 _NUMERIC_STRIP_RE = re.compile(r"[^\d.\-]")
 
+# How stale the equipment snapshot may be before "the generator is off, so the
+# correct output is 0" stops being a fair inference and becomes an invented
+# reading. A day covers any plausible reporting gap on a working unit.
+_OFF_MEANS_ZERO_MAX_AGE_SECONDS = 24 * 60 * 60
+
 _RUNNING_STATES = {"running"}
 _STOPPED_STATES = {"stopped", "ready", "idle", "standby", "off"}
 
@@ -317,11 +322,21 @@ def normalize_site(
         """Read a generator-output field.
 
         When the unit is known to be off, zero is the *correct* current value,
-        so a stale zero is still accurate and worth reporting. When it is
-        running, a stale zero is suspect (the snapshot may predate the start),
-        so report nothing rather than a false zero.
+        so a recent stale zero is still accurate and worth reporting. When it
+        is running, a stale zero is suspect (the snapshot may predate the
+        start), so report nothing rather than a false zero.
+
+        The off-means-zero shortcut has an upper age bound. It is sound for a
+        snapshot minutes or hours old, but some units never upload equipment
+        telemetry at all — one real generator produced zero non-zero readings
+        across 450,000 polls spanning five months and twenty-odd exercise
+        runs. Synthesising a confident `0 rpm` from a nine-month-old snapshot
+        presents an *absence of data* as a measurement. Past the bound, report
+        nothing so the gap is visible.
         """
-        if generator_running is False:
+        if generator_running is False and (
+            equipment_age is None or equipment_age <= _OFF_MEANS_ZERO_MAX_AGE_SECONDS
+        ):
             return 0
         return instantaneous(paths)
 

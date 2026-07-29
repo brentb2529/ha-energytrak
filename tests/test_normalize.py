@@ -118,8 +118,8 @@ r = N.normalize_site(
 )
 check("battery_voltage", r["battery_voltage"], 13.1)
 check("engine_hours skips the cleanState 0", r["engine_hours"], 412.5)
-check("engine_speed reads 0 when off", r["engine_speed"], 0)
-check("output_voltage reads 0 when off", r["output_voltage"], 0)
+check("ancient snapshot: no invented zero", r["engine_speed"], None)
+check("ancient snapshot: no invented zero", r["output_voltage"], None)
 check("grid_voltage passes through stale", r["grid_voltage"], 243)
 check("grid_frequency passes through stale", r["grid_frequency"], 59.9)
 check("starts_count survives staleness", r["starts_count"], 37)
@@ -172,6 +172,23 @@ check(
     r["equipment_data_timestamp"].astimezone(UTC),
     datetime(2026, 4, 19, 11, 20, 17, tzinfo=UTC),
 )
+
+
+# --- Recently-stale snapshot still gets the off-means-zero shortcut -------
+print("recently stale snapshot, generator off")
+recent = (NOW - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+r = N.normalize_site(
+    "site1", None,
+    [device_doc(
+        clean={"generatorRunning": b(False), "state": s("Ready")},
+        raw=equip(recent, EngineSpeed=i(0), GeneratorL1L2Voltage=i(0),
+                  LoadTotalPower=i(0)),
+    )],
+    stale_threshold_seconds=900, now=NOW,
+)
+check("3h-old snapshot with unit off still reads 0", r["engine_speed"], 0)
+check("and output voltage", r["output_voltage"], 0)
+check("but is still flagged stale", r["equipment_data_stale"], True)
 
 # --- Fresh snapshot -> everything live ---------------------------------
 print("fresh snapshot, running")
@@ -340,7 +357,7 @@ check("empty-string make is not used as a value", r["make"], None)
 check("monitor connectivity", r["monitor_online"], True)
 check("network strength", r["network_strength"], "excellent")
 check("generator name preferred", r["name"], "Example Generator")
-check("still off, so outputs read 0", r["engine_speed"], 0)
+check("ancient snapshot: no invented zero", r["engine_speed"], None)
 
 print("triggeredFaults become alarms")
 mon_faults = named_doc(

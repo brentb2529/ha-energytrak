@@ -109,9 +109,18 @@ EnergyTrak feeds two independent pipelines into the same document:
 Trusting the second one blindly paints false zeros. The integration instead:
 
 - **Generator output fields** (RPM, output voltage/frequency, load, per-phase):
-  report `0` when the unit is known to be off — a stale zero is the correct
-  current value. Report *nothing* when the unit is running but the snapshot is
-  stale, rather than a misleading zero.
+  report `0` when the unit is known to be off *and* the snapshot is less than
+  a day old — a recent stale zero is the correct current value. Report
+  *nothing* when the unit is running but the snapshot is stale, and nothing
+  once the snapshot passes a day old, whatever the run state.
+
+  That last bound matters: some units never upload equipment telemetry at all.
+  One real generator produced **zero** non-zero readings across 450,000 polls
+  spanning five months and twenty-odd exercise runs. Synthesising a confident
+  `0 rpm` from a nine-month-old snapshot dresses an absence of data up as a
+  measurement — so past a day, these entities go unknown and the gap is
+  visible. If yours sit at unknown permanently, disable them; the vendor is
+  not sending that data and never will without a hardware fix.
 - **Utility fields** (grid voltage/frequency): pass through at any age — the
   grid is ~240 V / 60 Hz whenever it is present, so a stale-but-plausible
   number beats an empty gauge. Whether the utility is actually there *right
