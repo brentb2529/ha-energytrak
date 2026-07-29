@@ -78,6 +78,10 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             for site_id in self.site_ids
         }
 
+        # A prolonged vendor outage would otherwise log the same warning on
+        # every poll forever, so only report when the failure changes.
+        self._last_error: str | None = None
+
         scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         self._stale_seconds = (
             int(entry.options.get(CONF_STALE_MINUTES, DEFAULT_STALE_MINUTES)) * 60
@@ -113,8 +117,18 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
 
         if errors and not results:
             raise UpdateFailed("; ".join(errors))
-        if errors:
-            _LOGGER.warning("Some EnergyTrak sites failed to update: %s", "; ".join(errors))
+
+        summary = "; ".join(errors) if errors else None
+        if summary and summary != self._last_error:
+            _LOGGER.warning(
+                "Some EnergyTrak sites failed to update, serving last known values: %s",
+                summary,
+            )
+        elif summary:
+            _LOGGER.debug("EnergyTrak sites still failing: %s", summary)
+        elif self._last_error:
+            _LOGGER.info("EnergyTrak polling recovered")
+        self._last_error = summary
 
         return results
 
