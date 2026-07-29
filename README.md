@@ -6,8 +6,15 @@ wrapper service — everything runs inside Home Assistant, no extra Pi required.
 
 ## Installation (HACS)
 
-1. HACS → ⋮ → **Custom repositories** → add `https://github.com/brentb2529/ha-energytrak` as an **Integration**.
-2. Install **EnergyTrak**, then restart Home Assistant.
+This is a **custom repository**. It will not appear in HACS search until you
+add it — HACS only searches repositories it already knows about, and inclusion
+in the default list is a separate submission to
+[hacs/default](https://github.com/hacs/default).
+
+1. HACS → ⋮ → **Custom repositories** → add
+   `https://github.com/brentb2529/ha-energytrak`, category **Integration**.
+2. It now appears in HACS search under **EnergyTrak** or **Briggs and
+   Stratton**. Install it, then restart Home Assistant.
 3. **Settings → Devices & Services → Add Integration → EnergyTrak**.
 
 Manual install: copy `custom_components/energytrak` into your HA
