@@ -379,14 +379,12 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         key="health",
         translation_key="health",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         value_fn=_key("health"),
     ),
     EnergyTrakSensorDescription(
         key="utility_monitor",
         translation_key="utility_monitor",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         value_fn=_key("utility_monitor"),
     ),
     # Age of the equipment snapshot: the single most useful number for
@@ -441,7 +439,6 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         translation_key="equipment_data_timestamp",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         value_fn=_timestamp("equipment_data_timestamp"),
     ),
     # last_received = our poll succeeded. last_changed = the vendor's payload
@@ -501,8 +498,9 @@ class EnergyTrakSensor(EnergyTrakEntity, SensorEntity):
         return self.entity_description.value_fn(self.site_data)
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return extra attributes, when the description provides them."""
-        if self.entity_description.attributes_fn is None:
-            return None
-        return self.entity_description.attributes_fn(self.site_data)
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Identity attributes, plus whatever the description adds."""
+        attributes = dict(self.base_state_attributes)
+        if self.entity_description.attributes_fn is not None:
+            attributes.update(self.entity_description.attributes_fn(self.site_data))
+        return attributes

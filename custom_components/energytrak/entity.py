@@ -70,12 +70,28 @@ class EnergyTrakEntity(CoordinatorEntity[EnergyTrakCoordinator]):
     """Base entity bound to one EnergyTrak site."""
 
     _attr_has_entity_name = True
+    _attr_attribution = "Data provided by EnergyTrak"
 
     def __init__(self, coordinator: EnergyTrakCoordinator, site_id: str, key: str) -> None:
         """Initialise the entity."""
         super().__init__(coordinator)
         self._site_id = site_id
+        self._field_key = key
         self._attr_unique_id = f"{site_id}_{key}"
+
+    @property
+    def base_state_attributes(self) -> dict[str, Any]:
+        """Machine-readable identity, carried on every entity.
+
+        Home Assistant's REST `/api/states` exposes no integration, device or
+        registry information, so an external consumer (a wall-panel dashboard,
+        say) has no reliable way to tell which entities belong to this
+        integration or which measurement each one is. Friendly names are not
+        usable for that — the user can rename them, and entity ids shift when a
+        device is assigned to an area. These two keys are stable for the life
+        of the entity and cost almost nothing to carry.
+        """
+        return {"energytrak_site": self._site_id, "energytrak_field": self._field_key}
 
     @property
     def site_data(self) -> dict[str, Any]:

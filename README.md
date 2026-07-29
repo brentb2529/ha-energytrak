@@ -239,6 +239,21 @@ automation:
             {{ states('sensor.generator_battery_voltage') }} V battery.
 ```
 
+## Consuming these entities from another app
+
+Every entity carries two attributes so an external consumer can find and
+identify them without guessing:
+
+| Attribute | Meaning |
+| --- | --- |
+| `energytrak_site` | the site id, so multiple generators stay separate |
+| `energytrak_field` | the stable field key, e.g. `battery_voltage` |
+
+Home Assistant's REST `/api/states` exposes no integration, device or registry
+information, and both friendly names and entity ids move when a device is
+renamed or assigned to an area — so neither is safe to key on. These two are
+stable for the life of the entity.
+
 ## Icon
 
 `custom_components/energytrak/brand/icon.png` (256×256, plus a 512×512 `@2x`)

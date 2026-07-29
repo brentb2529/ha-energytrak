@@ -52,6 +52,7 @@ class EnergyTrakBinarySensorDescription(BinarySensorEntityDescription):
 
     value_fn: Callable[[dict[str, Any]], bool | None]
     picture_fn: Callable[[dict[str, Any]], str | None] | None = None
+    attributes_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     # Created even when the value is missing: these are the entities that
     # explain why other data is absent, so they must exist in exactly that case.
     always: bool = False
@@ -110,8 +111,10 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         key="smart_mode",
         translation_key="smart_mode",
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         value_fn=lambda data: data.get("smart_mode_enabled"),
+        # Smart mode has a detection strategy ("AUTO") worth carrying alongside
+        # the on/off, and it has nowhere else to live.
+        attributes_fn=lambda data: {"detection": data.get("smart_mode_detection")},
     ),
 )
 
@@ -150,6 +153,14 @@ class EnergyTrakBinarySensor(EnergyTrakEntity, BinarySensorEntity):
         """Return the current state."""
         value = self.entity_description.value_fn(self.site_data)
         return None if value is None else bool(value)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Identity attributes, plus whatever the description adds."""
+        attributes = dict(self.base_state_attributes)
+        if self.entity_description.attributes_fn is not None:
+            attributes.update(self.entity_description.attributes_fn(self.site_data))
+        return attributes
 
     @property
     def entity_picture(self) -> str | None:
