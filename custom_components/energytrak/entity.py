@@ -42,4 +42,5 @@ class EnergyTrakEntity(CoordinatorEntity[EnergyTrakCoordinator]):
             manufacturer=data.get("make") or MANUFACTURER,
             model=data.get("model"),
             serial_number=data.get("serial_number"),
+            sw_version=data.get("firmware_version"),
         )

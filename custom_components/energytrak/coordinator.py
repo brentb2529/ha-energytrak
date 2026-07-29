@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -28,7 +29,7 @@ from .const import (
     DOMAIN,
     SITE_COLLECTION,
 )
-from .normalize import extract_device_ids, normalize_device
+from .normalize import extract_device_ids, normalize_site
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class SiteRuntime:
     """Per-site cached state that survives a failed poll."""
 
     site_name: str | None = None
-    device_id: str | None = None
+    device_ids: list[str] = field(default_factory=list)
     last_received_at: datetime | None = None
     last_changed_at: datetime | None = None
     signature: tuple[Any, ...] | None = field(default=None, repr=False)
@@ -133,24 +134,28 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         return results
 
     async def _async_fetch_site(self, site_id: str) -> dict[str, Any]:
-        """Read one site and its first device, normalised."""
+        """Read one site and all of its devices, normalised into one payload."""
         runtime = self.sites.setdefault(site_id, SiteRuntime())
 
-        # The device id is stable, so only resolve it once per restart.
-        if runtime.device_id is None:
+        # The device list is stable, so only resolve it once per restart.
+        if not runtime.device_ids:
             site_doc = await self.client.async_get_document(SITE_COLLECTION, site_id)
-            device_ids = extract_device_ids(site_doc)
-            if not device_ids:
+            runtime.device_ids = extract_device_ids(site_doc)
+            if not runtime.device_ids:
                 raise EnergyTrakError(f"no device linked to site {site_id}")
-            runtime.device_id = device_ids[0]
 
-        device_doc = await self.client.async_get_document(
-            DEVICE_COLLECTION, runtime.device_id
+        # A site's devices hold differently-aged copies of the telemetry, so
+        # fetch them all and let normalize_site pick the best source per field.
+        device_docs = await asyncio.gather(
+            *(
+                self.client.async_get_document(DEVICE_COLLECTION, device_id)
+                for device_id in runtime.device_ids
+            )
         )
-        data = normalize_device(
+        data = normalize_site(
             site_id,
             runtime.site_name,
-            device_doc,
+            list(device_docs),
             stale_threshold_seconds=self._stale_seconds,
         )
 

@@ -57,6 +57,28 @@ Disabled by default (enable per entity if your unit reports them): per-phase
 voltages, currents, apparent/reactive power, power factor, fuel type,
 ignition, health, utility monitor string.
 
+## About the multiple devices per site
+
+A site links to several device documents — typically `<id>-generator`,
+`<id>-grid` and the genmon monitor. They carry overlapping but **differently
+aged** copies of the same telemetry. On a real unit the monitor's snapshot was
+190 days fresher than the generator's, with a higher engine-hour and start
+count, while the grid device published a live utility voltage on its heartbeat
+rather than a months-old one.
+
+Reading only the first device (as the old Node service did) therefore reports
+stale counters. This integration fetches them all and merges by role:
+
+| Source | Used for |
+| --- | --- |
+| generator | the heartbeat: run state, battery, health, smart mode, fault flag |
+| grid | live utility voltage and utility-present flag |
+| monitor | connectivity, firmware, the live `triggeredFaults` alarm list |
+| whichever has the newest snapshot | all equipment telemetry and counters |
+
+The `Equipment data age` sensor carries an `equipment_source` attribute naming
+the device the snapshot came from, plus a `devices` list.
+
 ## About staleness
 
 EnergyTrak feeds two independent pipelines into the same document:

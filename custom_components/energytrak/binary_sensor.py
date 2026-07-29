@@ -70,6 +70,13 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         value_fn=lambda data: data.get("equipment_data_stale"),
     ),
     EnergyTrakBinarySensorDescription(
+        key="monitor_online",
+        translation_key="monitor_online",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: data.get("monitor_online"),
+    ),
+    EnergyTrakBinarySensorDescription(
         key="smart_mode",
         translation_key="smart_mode",
         entity_category=EntityCategory.DIAGNOSTIC,

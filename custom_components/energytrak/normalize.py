@@ -1,23 +1,31 @@
 """Turn raw EnergyTrak Firestore documents into a flat telemetry dict.
 
-This is a direct port of the extraction logic that used to live in the
-standalone Node wrapper service. The awkward parts are all upstream quirks:
+The awkward parts are all upstream quirks:
 
 * Firestore's REST API returns a verbose ``{"stringValue": "..."}`` encoding
   that has to be unwrapped recursively.
-* The same measurement can appear in up to four places on the device document
-  (``details.state``, ``details.rawState.Event.*``, the device root), with
+* The same measurement can appear in several places on a device document
+  (``details.state``, ``details.rawState.Event.*``, the document root), with
   inconsistent casing, so lookups walk a priority list of dotted paths.
 * ``rawState.Event.EquipmentEventData`` is a *snapshot* from the last full
   telemetry upload, not a live feed. On cellular genmon units it can be hours
   or months old, and blindly trusting it paints false zeros. See
-  ``_StalenessRules`` below for how each field category is treated.
+  ``generator_output`` / ``utility_reading`` for how each field category is
+  treated.
+* A site links to **several** device documents — typically ``-generator``,
+  ``-grid`` and the genmon monitor. They carry overlapping but differently
+  aged copies of the telemetry: on a real unit the monitor's snapshot was 190
+  days fresher than the generator's, with a higher engine-hour and start
+  count. Reading only the first device (as the old Node service did) reports
+  stale counters, so ``normalize_site`` merges them by role and takes the
+  equipment snapshot from whichever device has the newest one.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -74,6 +82,69 @@ def parse_firestore_document(doc: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(fields, dict):
         return {}
     return {key: parse_firestore_value(value) for key, value in fields.items()}
+
+
+@dataclass
+class _DeviceView:
+    """One device document, unpacked into the pieces we read from."""
+
+    device_id: str
+    kind: str  # "generator" | "grid" | "monitor"
+    root: dict[str, Any]
+    clean: dict[str, Any]
+    raw: dict[str, Any]
+    event_ts: datetime | None
+    updated_at: str | None
+
+
+def _view(doc: dict[str, Any]) -> _DeviceView:
+    """Unpack one raw Firestore device document."""
+    root = parse_firestore_document(doc)
+    device_id = str(doc.get("name", "")).split("/")[-1]
+
+    details = root.get("details")
+    if not isinstance(details, dict):
+        details = {}
+
+    clean = details.get("state")
+    if not isinstance(clean, dict):
+        clean = {}
+
+    raw = details.get("rawState") or root.get("rawState") or {}
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            raw = {}
+    if not isinstance(raw, dict):
+        raw = {}
+
+    # `deviceType` is present on the generator and grid documents; the genmon
+    # monitor has no such field, so anything unlabelled is treated as the
+    # monitor.
+    kind = str(root.get("deviceType") or "").strip().lower()
+    if kind not in ("generator", "grid"):
+        lowered = device_id.lower()
+        if lowered.endswith("-generator"):
+            kind = "generator"
+        elif lowered.endswith("-grid"):
+            kind = "grid"
+        else:
+            kind = "monitor"
+
+    event_ts = _parse_timestamp(
+        _find(
+            [raw],
+            [
+                "Event.MessageEventData.ActualDateUTC",
+                "Event.MessageEventData.ActualDate",
+                "Event.MessageEventData.Created",
+            ],
+        )
+    )
+    return _DeviceView(
+        device_id, kind, root, clean, raw, event_ts, doc.get("updateTime")
+    )
 
 
 def extract_device_ids(site_doc: dict[str, Any]) -> list[str]:
@@ -167,51 +238,48 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # ----------------------------------------------------------------------
 
 
-def normalize_device(
+def normalize_site(
     site_id: str,
     site_name: str | None,
-    device_doc: dict[str, Any],
+    device_docs: list[dict[str, Any]],
     *,
     stale_threshold_seconds: int,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Build the flat telemetry dict the entities read from."""
+    """Build the flat telemetry dict the entities read from.
+
+    ``device_docs`` is every device document linked to the site. Each has a
+    role: the generator carries the authoritative heartbeat, the grid device
+    carries a *fresh* utility voltage in its heartbeat (rather than a months-old
+    snapshot), and the monitor carries connectivity plus — often — the newest
+    equipment snapshot and the live fault list.
+    """
     now = now or datetime.now(UTC)
-    parsed_device = parse_firestore_document(device_doc)
+    views = [_view(doc) for doc in device_docs if doc]
+    if not views:
+        raise ValueError(f"no device documents for site {site_id}")
 
-    details = parsed_device.get("details") or {}
-    if not isinstance(details, dict):
-        details = {}
+    generator = next((v for v in views if v.kind == "generator"), views[0])
+    grid = next((v for v in views if v.kind == "grid"), None)
+    monitor = next((v for v in views if v.kind == "monitor"), None)
 
-    # `state` holds pre-computed, frequently-refreshed values; `rawState` is
-    # the full (possibly ancient) equipment-event dump.
-    clean_state = details.get("state") or {}
-    if not isinstance(clean_state, dict):
-        clean_state = {}
+    # The equipment snapshot is whichever device uploaded most recently. On a
+    # real site these differ by months, and the newest one also carries the
+    # higher (correct) engine-hour and start counts.
+    dated = [v for v in views if v.event_ts is not None]
+    snapshot = max(dated, key=lambda v: v.event_ts) if dated else generator
 
-    raw_state = details.get("rawState") or parsed_device.get("rawState") or {}
-    if isinstance(raw_state, str):
-        try:
-            raw_state = json.loads(raw_state)
-        except ValueError:
-            raw_state = {}
-    if not isinstance(raw_state, dict):
-        raw_state = {}
+    clean_state = generator.clean
+    raw_state = snapshot.raw
+    parsed_device = generator.root
+    grid_clean = grid.clean if grid else {}
+    monitor_clean = monitor.clean if monitor else {}
 
     sources: list[Any] = [clean_state, raw_state, parsed_device]
     fresh_sources: list[Any] = [clean_state, parsed_device]
 
     # --- Equipment-snapshot age -------------------------------------
-    equipment_ts = _parse_timestamp(
-        _find(
-            sources,
-            [
-                "Event.MessageEventData.ActualDateUTC",
-                "Event.MessageEventData.ActualDate",
-                "Event.MessageEventData.Created",
-            ],
-        )
-    )
+    equipment_ts = snapshot.event_ts
     equipment_age: float | None = None
     if equipment_ts is not None:
         equipment_age = (now - equipment_ts).total_seconds()
@@ -280,9 +348,11 @@ def normalize_device(
         engine_hours = 0
 
     # --- Alarms ------------------------------------------------------
-    # Event.Alarms nests ~25 individual flags under Alarm1..Alarm14 groups,
-    # each a "0"/"1" string. Flatten to a list of firing names plus the full
-    # map so automations can trigger on a specific alarm.
+    # Two possible sources. Older payloads nest ~25 individual flags under
+    # Event.Alarms / Alarm1..Alarm14, each a "0"/"1" string. Current firmware
+    # instead publishes a live `triggeredFaults` list on the monitor's
+    # heartbeat — which is fresh, where the Alarms block shares the equipment
+    # snapshot's age. Use both.
     alarms_block = _find(sources, ["Event.Alarms"]) or {}
     alarm_flags: dict[str, bool] = {}
     active_alarms: list[str] = []
@@ -295,11 +365,18 @@ def normalize_device(
                 alarm_flags[name] = firing
                 if firing:
                     active_alarms.append(name)
-    active_alarms.sort()
+
+    for fault in _find([monitor_clean, clean_state], ["triggeredFaults"]) or []:
+        label = _fault_label(fault)
+        if label:
+            alarm_flags[label] = True
+            active_alarms.append(label)
+
+    active_alarms = sorted(set(active_alarms))
 
     # --- Grid status -------------------------------------------------
     utility_monitor = _find(sources, ["Event.EquipmentEventData.UtilityPowerMonitor"])
-    utility_present = _find(sources, ["utilityPresent"])
+    utility_present = _find([clean_state, grid_clean], ["utilityPresent"])
     grid_status = _grid_status(utility_present, utility_monitor)
 
     is_running = (
@@ -309,21 +386,52 @@ def normalize_device(
     )
 
     name = (
-        _find(sources, ["name", "Device.ItemName", "Equipment.EquipmentName"])
+        _find([clean_state, parsed_device], ["name"])
+        or _find(sources, ["Device.ItemName", "Equipment.EquipmentName"])
         or site_name
         or "Generator"
     )
 
+    # The grid device publishes a live utility voltage on its heartbeat, which
+    # beats the equipment snapshot's months-old copy.
+    grid_voltage = _to_number(_find([grid_clean], ["utilityVoltage", "voltage"]))
+    if grid_voltage is None:
+        grid_voltage = utility_reading(
+            [
+                "gridVoltage",
+                "Event.EquipmentEventData.MainsL1L2Voltage",
+                "Event.EquipmentEventData.MainsL1NVoltage",
+            ]
+        )
+
     return {
         "site_id": site_id,
         "name": name,
-        "status": _find(sources, ["status", "state"]) or "Unknown",
+        # `state` is the run state ("standby"/"running"); `status` and
+        # `health` are both the health grade, so they belong on the health
+        # sensor rather than here.
+        "status": _find([clean_state], ["state", "status"]) or "Unknown",
         "active": is_running,
-        "model": _find(sources, ["model", "Equipment.Model"]),
-        "make": _find(sources, ["make", "Equipment.Make"]),
+        "model": _first_text(
+            parsed_device.get("modelNumber"),
+            parsed_device.get("productModel"),
+            parsed_device.get("productName"),
+            _find(sources, ["model", "Equipment.Model"]),
+        ),
+        "make": _first_text(
+            parsed_device.get("make"), _find(sources, ["make", "Equipment.Make"])
+        ),
         "engine_manufacturer": _find(sources, ["Equipment.EngineMfg"]),
         "engine_model": _find(sources, ["Equipment.EngineModel"]),
-        "serial_number": _find(sources, ["Equipment.EquipmentSerial"]),
+        "serial_number": _first_text(
+            parsed_device.get("serialNumber"),
+            monitor.root.get("serialNumber") if monitor else None,
+            _find(sources, ["Equipment.EquipmentSerial"]),
+        ),
+        "firmware_version": _first_text(
+            parsed_device.get("firmwareVersion"),
+            monitor.root.get("firmwareVersion") if monitor else None,
+        ),
         # Battery is refreshed in cleanState on every heartbeat.
         "battery_voltage": _to_number(
             _find(
@@ -337,13 +445,7 @@ def normalize_device(
         ),
         "engine_hours": engine_hours,
         # Utility side
-        "grid_voltage": utility_reading(
-            [
-                "gridVoltage",
-                "Event.EquipmentEventData.MainsL1L2Voltage",
-                "Event.EquipmentEventData.MainsL1NVoltage",
-            ]
-        ),
+        "grid_voltage": grid_voltage,
         "grid_frequency": utility_reading(
             ["Event.EquipmentEventData.MainsFrequency", "gridStatus.frequency"]
         ),
@@ -407,8 +509,11 @@ def normalize_device(
         "fuel_type": _find(
             sources, ["Event.EquipmentEventData.FuelType", "Equipment.FuelTypeTP"]
         ),
-        "fault_condition": _find(
-            sources, ["Event.EquipmentEventData.FaultCondition", "fault"]
+        # cleanState carries `fault` as a bool, the equipment event as a text
+        # code. Normalise so the sensor never reads a bare "False".
+        "fault_condition": _fault_text(
+            _find(sources, ["Event.EquipmentEventData.FaultCondition", "fault"]),
+            active_alarms,
         ),
         "ignition_status": _find(sources, ["Event.EquipmentEventData.IgnitionStatus"]),
         "operation_mode": _find(
@@ -418,7 +523,26 @@ def normalize_device(
                 "Event.EquipmentEventData.CurrentDgStatus",
             ],
         ),
-        "health": _find(sources, ["health", "siteHealth"]),
+        "health": _find([clean_state], ["health", "status", "siteHealth"]),
+        # Monitor-side diagnostics: on a cellular/wifi genmon these explain
+        # *why* telemetry stopped arriving, which the generator document
+        # cannot tell you.
+        "monitor_state": _find([monitor_clean], ["state"]),
+        "monitor_online": _first_present(
+            monitor_clean.get("simNetworkConnected"),
+            (
+                str(monitor_clean.get("state") or "").lower() == "connected"
+                if monitor_clean.get("state")
+                else None
+            ),
+        ),
+        "network_type": _find([monitor_clean], ["networkType"]),
+        "network_strength": _find([monitor_clean], ["networkStrength"]),
+        "firmware_update_status": _find([monitor_clean], ["firmwareUpdateStatus"]),
+        "utility_power": _find([grid_clean, monitor_clean], ["utilityPower"]),
+        # Which device supplied the equipment snapshot, and what else we saw.
+        "equipment_source": snapshot.device_id,
+        "device_ids": [v.device_id for v in views],
         "smart_mode_enabled": _find([clean_state], ["smartModeEnabled"]),
         "smart_mode_detection": _find([clean_state], ["smartModeDetection"]),
         "status_color": _find([clean_state], ["generatorStatusColor"]),
@@ -433,13 +557,61 @@ def normalize_device(
         "location_state": _find(sources, ["Event.Location.State"]),
         # Freshness
         "clean_state_last_updated": _find([clean_state], ["lastUpdated"]),
-        "document_updated_at": device_doc.get("updateTime"),
+        "document_updated_at": generator.updated_at,
         "equipment_data_timestamp": equipment_ts,
         "equipment_data_age_seconds": (
             int(equipment_age) if equipment_age is not None else None
         ),
         "equipment_data_stale": equipment_stale,
     }
+
+
+def _first_text(*values: Any) -> str | None:
+    """First value that is a non-empty string.
+
+    EnergyTrak fills unknown metadata with empty strings rather than omitting
+    the key, so a plain ``or`` chain would stop on the wrong one.
+    """
+    for value in values:
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _first_present(*values: Any) -> Any:
+    """First value that is not None."""
+    for value in values:
+        if value is not None:
+            return value
+    return None
+
+
+def _fault_label(fault: Any) -> str | None:
+    """Name one entry from the monitor's ``triggeredFaults`` list."""
+    if isinstance(fault, str):
+        return fault.strip() or None
+    if isinstance(fault, dict):
+        for key in ("name", "faultName", "description", "code", "faultCode", "id"):
+            value = fault.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+            if isinstance(value, (int, float)):
+                return str(value)
+    return None
+
+
+def _fault_text(raw: Any, active_alarms: list[str]) -> str:
+    """Render the fault condition as text rather than a bare bool."""
+    # A firing alarm outranks the boolean: the generator's `fault` flag and the
+    # monitor's fault list come from different pipelines and can disagree, and
+    # naming the alarm is always more useful than "None".
+    if active_alarms:
+        return ", ".join(active_alarms)
+    if isinstance(raw, bool):
+        return "Fault" if raw else "None"
+    if raw is None or str(raw).strip() == "":
+        return ", ".join(active_alarms) if active_alarms else "None"
+    return str(raw)
 
 
 def _grid_status(utility_present: Any, utility_monitor: Any) -> str:

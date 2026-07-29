@@ -362,6 +362,40 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_key("equipment_data_age_seconds"),
+        attributes_fn=lambda data: {
+            "equipment_source": data.get("equipment_source"),
+            "devices": data.get("device_ids") or [],
+        },
+    ),
+    # Monitor-side diagnostics. When telemetry stops arriving these explain
+    # why; the generator document alone cannot.
+    EnergyTrakSensorDescription(
+        key="utility_power",
+        translation_key="utility_power",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("utility_power"),
+    ),
+    EnergyTrakSensorDescription(
+        key="network_strength",
+        translation_key="network_strength",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_key("network_strength"),
+        attributes_fn=lambda data: {"network_type": data.get("network_type")},
+    ),
+    EnergyTrakSensorDescription(
+        key="monitor_state",
+        translation_key="monitor_state",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_key("monitor_state"),
+    ),
+    EnergyTrakSensorDescription(
+        key="firmware_update_status",
+        translation_key="firmware_update_status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=_key("firmware_update_status"),
     ),
     EnergyTrakSensorDescription(
         key="equipment_data_timestamp",

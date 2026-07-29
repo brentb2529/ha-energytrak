@@ -88,10 +88,10 @@ def equip(ts, **kv):
 
 # --- Stale snapshot, generator known OFF -> output fields read 0 --------
 print("stale snapshot, generator off")
-r = N.normalize_device(
+r = N.normalize_site(
     "site1",
     "Home",
-    device_doc(
+    [device_doc(
         clean={
             "batteryVoltage": s("13.1"),
             "generatorRunning": b(False),
@@ -112,7 +112,7 @@ r = N.normalize_device(
             TripsCount=i(2),
             UtilityPowerMonitor=s("STOPPED UNDER 190V"),
         ),
-    ),
+    )],
     stale_threshold_seconds=900,
     now=NOW,
 )
@@ -142,10 +142,10 @@ check("active", r["active"], False)
 
 # --- Stale snapshot, generator RUNNING -> output fields report nothing ---
 print("stale snapshot, generator running")
-r = N.normalize_device(
+r = N.normalize_site(
     "site1",
     None,
-    device_doc(
+    [device_doc(
         clean={
             "generatorRunning": b(True),
             "state": s("Running"),
@@ -158,7 +158,7 @@ r = N.normalize_device(
             GeneratorL1L2Voltage=i(0),
             LoadTotalPower=i(0),
         ),
-    ),
+    )],
     stale_threshold_seconds=900,
     now=NOW,
 )
@@ -176,10 +176,10 @@ check(
 # --- Fresh snapshot -> everything live ---------------------------------
 print("fresh snapshot, running")
 fresh = (NOW - timedelta(seconds=60)).strftime("%Y-%m-%dT%H:%M:%S")
-r = N.normalize_device(
+r = N.normalize_site(
     "site1",
     None,
-    device_doc(
+    [device_doc(
         clean={"generatorRunning": b(True), "state": s("Running")},
         raw=equip(
             fresh,
@@ -194,7 +194,7 @@ r = N.normalize_device(
             LoadTotalApparentPower=i(4400),
             LoadTotalReactivePower=i(300),
         ),
-    ),
+    )],
     stale_threshold_seconds=900,
     now=NOW,
 )
@@ -234,14 +234,14 @@ doc = {
         )
     },
 }
-r = N.normalize_device("s", None, doc, stale_threshold_seconds=900, now=NOW)
+r = N.normalize_site("s", None, [doc], stale_threshold_seconds=900, now=NOW)
 check("starts_count from JSON-string rawState", r["starts_count"], 12)
 
 print("brand-new unit where every source reads 0 hours")
-r = N.normalize_device(
+r = N.normalize_site(
     "s",
     None,
-    device_doc(clean={"engineRuntimeHours": i(0)}, raw=equip("2026-07-29T11:59:00")),
+    [device_doc(clean={"engineRuntimeHours": i(0)}, raw=equip("2026-07-29T11:59:00"))],
     stale_threshold_seconds=900,
     now=NOW,
 )
@@ -268,6 +268,90 @@ check(
     ),
     ["abc123"],
 )
+
+
+# --- Multi-device site (the real shape) ---------------------------------
+# A real site links -generator, -grid and the genmon monitor. They carry
+# differently aged copies of the telemetry; the monitor's snapshot was 190
+# days fresher, with higher counters. Reading only the first device (what the
+# old Node service did) reports stale counters.
+print("multi-device site merge")
+
+
+def plain_equip(ts, **kv):
+    """Equipment event with no Alarms block — the shape real units send."""
+    block = equip(ts, **kv)
+    del block["Event"]["mapValue"]["fields"]["Alarms"]
+    return block
+
+
+def named_doc(device_id, *, root=None, clean, raw):
+    doc = device_doc(clean=clean, raw=raw)
+    doc["name"] = f"projects/x/databases/(default)/documents/device/{device_id}"
+    if root:
+        doc["fields"].update({k: v for k, v in root.items()})
+    return doc
+
+
+gen_doc = named_doc(
+    "1234567890-generator",
+    root={"deviceType": s("generator"), "make": s(""), "modelNumber": s(""),
+          "serialNumber": s(""), "name": s("Example Generator")},
+    clean={"state": s("standby"), "status": s("healthy"), "health": s("healthy"),
+           "fault": b(False), "generatorRunning": b(False), "batteryVoltage": s("13.1"),
+           "engineRuntimeHours": s("0"), "utilityPresent": b(True),
+           "smartModeEnabled": b(True)},
+    raw=plain_equip("2025-10-23T11:20:17", EngineHours=s("75.61667"), StartsCount=s("225"),
+              TripsCount=s("2"), MainsL1L2Voltage=s("244"), EngineSpeed=s("0")),
+)
+mon_doc = named_doc(
+    "1234567890-genmon",
+    root={"serialNumber": s("1234567890"), "name": s("Example Site")},
+    clean={"state": s("connected"), "simNetworkConnected": b(True),
+           "networkType": s("wifi"), "networkStrength": s("excellent"),
+           "firmwareUpdateStatus": s("UP_TO_DATE"), "triggeredFaults": {"arrayValue": {}},
+           "utilityPower": s("normal")},
+    raw=plain_equip("2026-05-01T03:47:20", EngineHours=s("90.47"), StartsCount=s("274"),
+              TripsCount=s("2"), MainsL1L2Voltage=s("241.0"), EngineSpeed=s("0"),
+              FuelType=s("NG"), CurrentDgStatus=s("Stopped")),
+)
+grid_doc = named_doc(
+    "1234567890-grid",
+    root={"deviceType": s("grid")},
+    clean={"state": s("online"), "utilityPresent": b(True), "voltage": s("244"),
+           "utilityVoltage": i(241), "utilityPower": s("normal")},
+    raw=plain_equip("2025-10-23T11:20:17", EngineHours=s("75.61667"), StartsCount=s("225")),
+)
+
+r = N.normalize_site("genmon-x", None, [gen_doc, mon_doc, grid_doc],
+                     stale_threshold_seconds=900, now=NOW)
+check("engine hours from the freshest snapshot", r["engine_hours"], 90.47)
+check("starts from the freshest snapshot", r["starts_count"], 274)
+check("snapshot sourced from the monitor", r["equipment_source"], "1234567890-genmon")
+check("all devices recorded", len(r["device_ids"]), 3)
+check("grid voltage from the grid heartbeat, not the old snapshot",
+      r["grid_voltage"], 241)
+check("status is the run state, not the health grade", r["status"], "standby")
+check("health keeps the health grade", r["health"], "healthy")
+check("boolean fault renders as text", r["fault_condition"], "None")
+check("fuel type only present on the monitor", r["fuel_type"], "NG")
+check("serial falls back to the monitor", r["serial_number"], "1234567890")
+check("empty-string make is not used as a value", r["make"], None)
+check("monitor connectivity", r["monitor_online"], True)
+check("network strength", r["network_strength"], "excellent")
+check("generator name preferred", r["name"], "Example Generator")
+check("still off, so outputs read 0", r["engine_speed"], 0)
+
+print("triggeredFaults become alarms")
+mon_faults = named_doc(
+    "site-genmon",
+    clean={"triggeredFaults": {"arrayValue": {"values": [s("LowBattery"),
+           m({"name": s("OverCrank")})]}}},
+    raw=plain_equip("2026-07-29T11:59:00"),
+)
+r = N.normalize_site("x", None, [gen_doc, mon_faults], stale_threshold_seconds=900, now=NOW)
+check("fault names extracted", r["active_alarms"], ["LowBattery", "OverCrank"])
+check("fault text lists them", "LowBattery" in r["fault_condition"], True)
 
 # --- Magic-link parsing -------------------------------------------------
 # api.py imports aiohttp, which we do not want to require just to test pure
