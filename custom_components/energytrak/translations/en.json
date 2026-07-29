@@ -187,6 +187,15 @@
       },
       "firmware_update_status": {
         "name": "Firmware update status"
+      },
+      "last_exercise": {
+        "name": "Last exercise"
+      },
+      "last_exercise_duration": {
+        "name": "Last exercise duration"
+      },
+      "next_exercise": {
+        "name": "Next exercise due"
       }
     },
     "binary_sensor": {
@@ -207,6 +216,9 @@
       },
       "monitor_online": {
         "name": "Monitor online"
+      },
+      "malfunction": {
+        "name": "Malfunction"
       }
     }
   }

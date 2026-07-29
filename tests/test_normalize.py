@@ -353,6 +353,58 @@ r = N.normalize_site("x", None, [gen_doc, mon_faults], stale_threshold_seconds=9
 check("fault names extracted", r["active_alarms"], ["LowBattery", "OverCrank"])
 check("fault text lists them", "LowBattery" in r["fault_condition"], True)
 
+
+# --- Site document: exercise history ------------------------------------
+# The equipment feed can be dormant for months while the unit still exercises
+# weekly. The site document is then the only record that it ran at all.
+print("site document exercise history")
+
+site_doc = {
+    "name": "projects/x/databases/(default)/documents/site/genmon-x",
+    "updateTime": "2026-07-25T15:22:10.255236Z",
+    "fields": {
+        "state": s("ready"),
+        "health": s("healthy"),
+        "isSubscriptionActive": b(True),
+        "commissionedAt": s("2025-03-12T20:09:11.415Z"),
+        "exercise": m({
+            "generatorRunSession": {"nullValue": None},
+            "lastActivity": m({
+                "finishedAt": s("2026-07-25T15:22:10.207Z"),
+                "duration": i(1217984),
+            }),
+            "exerciseNotifications": m({
+                "intervalDays": i(8),
+                "nextExerciseDue": s("2026-08-02T15:22:10.207Z"),
+            }),
+        }),
+        "malfunction": m({"hasMalfunction": b(False), "description": s("")}),
+    },
+}
+
+r = N.normalize_site(
+    "genmon-x", None, [gen_doc, mon_doc, grid_doc],
+    stale_threshold_seconds=900, site_doc=site_doc, now=NOW,
+)
+check("last exercise timestamp", r["last_exercise_at"],
+      datetime(2026, 7, 25, 15, 22, 10, 207000, tzinfo=UTC))
+check("duration converted from ms to s", r["last_exercise_duration_seconds"], 1218)
+check("next exercise due", r["next_exercise_due"],
+      datetime(2026, 8, 2, 15, 22, 10, 207000, tzinfo=UTC))
+check("exercise interval", r["exercise_interval_days"], 8)
+check("no malfunction", r["has_malfunction"], False)
+check("empty description is not surfaced", r["malfunction_description"], None)
+check("site state", r["site_state"], "ready")
+check("subscription", r["subscription_active"], True)
+check("no run in progress", r["run_session"], None)
+check("exercise data survives a dormant equipment feed",
+      r["equipment_data_stale"], True)
+
+print("site document absent")
+r = N.normalize_site("x", None, [gen_doc], stale_threshold_seconds=900, now=NOW)
+check("exercise fields default to None", r["last_exercise_at"], None)
+check("malfunction defaults to None", r["has_malfunction"], None)
+
 # --- Magic-link parsing -------------------------------------------------
 # api.py imports aiohttp, which we do not want to require just to test pure
 # string handling. Stub the two names it uses.

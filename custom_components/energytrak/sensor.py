@@ -159,6 +159,40 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
             "alarm_flags": data.get("alarm_flags") or {},
         },
     ),
+    # ---- Exercise history -------------------------------------------
+    # From the site document, not the devices. On a unit whose equipment feed
+    # has gone dormant these are the only proof the generator still runs.
+    EnergyTrakSensorDescription(
+        key="last_exercise",
+        translation_key="last_exercise",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:calendar-check",
+        value_fn=_timestamp("last_exercise_at"),
+        attributes_fn=lambda data: {
+            "duration_seconds": data.get("last_exercise_duration_seconds"),
+            "run_session": data.get("run_session"),
+        },
+    ),
+    EnergyTrakSensorDescription(
+        key="last_exercise_duration",
+        translation_key="last_exercise_duration",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.MINUTES,
+        suggested_display_precision=1,
+        icon="mdi:timer-outline",
+        value_fn=_key("last_exercise_duration_seconds"),
+    ),
+    EnergyTrakSensorDescription(
+        key="next_exercise",
+        translation_key="next_exercise",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:calendar-clock",
+        value_fn=_timestamp("next_exercise_due"),
+        attributes_fn=lambda data: {
+            "interval_days": data.get("exercise_interval_days")
+        },
+    ),
     # ---- Counters ---------------------------------------------------
     EnergyTrakSensorDescription(
         key="starts_count",

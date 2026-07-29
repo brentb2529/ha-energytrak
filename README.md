@@ -79,6 +79,24 @@ stale counters. This integration fetches them all and merges by role:
 The `Equipment data age` sensor carries an `equipment_source` attribute naming
 the device the snapshot came from, plus a `devices` list.
 
+## Exercise history
+
+The weekly test run is recorded on the **site** document, not on any device —
+so it survives a dormant equipment feed. On a real unit whose
+`EquipmentEventData` had not updated in three months, the site document still
+correctly showed a 20-minute exercise four days earlier.
+
+| Entity | Source |
+| --- | --- |
+| Last exercise | `exercise.lastActivity.finishedAt` |
+| Last exercise duration | `exercise.lastActivity.duration` (ms, shown in minutes) |
+| Next exercise due | `exercise.exerciseNotifications.nextExerciseDue` |
+| Malfunction | `malfunction.hasMalfunction`, raised by EnergyTrak's outage manager |
+
+If RPM and output voltage sit at zero but Last exercise is recent, the
+generator is fine — it is the vendor's equipment telemetry that has stopped,
+not the unit.
+
 ## About staleness
 
 EnergyTrak feeds two independent pipelines into the same document:

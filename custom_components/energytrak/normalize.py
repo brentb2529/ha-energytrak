@@ -244,6 +244,7 @@ def normalize_site(
     device_docs: list[dict[str, Any]],
     *,
     stale_threshold_seconds: int,
+    site_doc: dict[str, Any] | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Build the flat telemetry dict the entities read from.
@@ -253,6 +254,11 @@ def normalize_site(
     carries a *fresh* utility voltage in its heartbeat (rather than a months-old
     snapshot), and the monitor carries connectivity plus — often — the newest
     equipment snapshot and the live fault list.
+
+    ``site_doc`` carries what none of the devices do: the exercise history.
+    That matters because the equipment pipeline can go dormant for months
+    while the unit keeps exercising weekly — the site document is then the
+    only evidence the generator ran at all.
     """
     now = now or datetime.now(UTC)
     views = [_view(doc) for doc in device_docs if doc]
@@ -543,6 +549,8 @@ def normalize_site(
         # Which device supplied the equipment snapshot, and what else we saw.
         "equipment_source": snapshot.device_id,
         "device_ids": [v.device_id for v in views],
+        # Site-level exercise history and faults.
+        **_site_fields(site_doc),
         "smart_mode_enabled": _find([clean_state], ["smartModeEnabled"]),
         "smart_mode_detection": _find([clean_state], ["smartModeDetection"]),
         "status_color": _find([clean_state], ["generatorStatusColor"]),
@@ -563,6 +571,66 @@ def normalize_site(
             int(equipment_age) if equipment_age is not None else None
         ),
         "equipment_data_stale": equipment_stale,
+    }
+
+
+def _site_fields(site_doc: dict[str, Any] | None) -> dict[str, Any]:
+    """Pull exercise history and site-level faults out of the site document.
+
+    The exercise block is the only place a weekly test run is recorded. On a
+    unit whose equipment telemetry has gone dormant, this is the difference
+    between "the generator has not run since May" and "it ran on Saturday for
+    twenty minutes and everything is fine".
+    """
+    empty: dict[str, Any] = {
+        "site_state": None,
+        "site_health": None,
+        "last_exercise_at": None,
+        "last_exercise_duration_seconds": None,
+        "next_exercise_due": None,
+        "exercise_interval_days": None,
+        "run_session": None,
+        "has_malfunction": None,
+        "malfunction_description": None,
+        "subscription_active": None,
+        "commissioned_at": None,
+    }
+    if not site_doc:
+        return empty
+
+    site = parse_firestore_document(site_doc)
+    if not site:
+        return empty
+
+    exercise = site.get("exercise") if isinstance(site.get("exercise"), dict) else {}
+    last = exercise.get("lastActivity") if isinstance(exercise.get("lastActivity"), dict) else {}
+    notify = (
+        exercise.get("exerciseNotifications")
+        if isinstance(exercise.get("exerciseNotifications"), dict)
+        else {}
+    )
+    malfunction = (
+        site.get("malfunction") if isinstance(site.get("malfunction"), dict) else {}
+    )
+
+    # `duration` is milliseconds (a ~20 minute exercise reads as ~1_218_000).
+    duration_ms = _to_number(last.get("duration"))
+    duration_s = round(duration_ms / 1000) if duration_ms is not None else None
+
+    return {
+        "site_state": site.get("state"),
+        "site_health": site.get("health") or site.get("status"),
+        "last_exercise_at": _parse_timestamp(last.get("finishedAt")),
+        "last_exercise_duration_seconds": duration_s,
+        "next_exercise_due": _parse_timestamp(notify.get("nextExerciseDue")),
+        "exercise_interval_days": _to_number(notify.get("intervalDays")),
+        # Populated only while a run is in progress, so useful as evidence the
+        # generator is running even when the equipment feed is dormant.
+        "run_session": exercise.get("generatorRunSession"),
+        "has_malfunction": malfunction.get("hasMalfunction"),
+        "malfunction_description": _first_text(malfunction.get("description")),
+        "subscription_active": site.get("isSubscriptionActive"),
+        "commissioned_at": _parse_timestamp(site.get("commissionedAt")),
     }
 
 

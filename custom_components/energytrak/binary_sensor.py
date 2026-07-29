@@ -69,6 +69,14 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get("equipment_data_stale"),
     ),
+    # Site-level malfunction flag, raised by EnergyTrak's own outage manager
+    # rather than by the controller.
+    EnergyTrakBinarySensorDescription(
+        key="malfunction",
+        translation_key="malfunction",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        value_fn=lambda data: data.get("has_malfunction"),
+    ),
     EnergyTrakBinarySensorDescription(
         key="monitor_online",
         translation_key="monitor_online",

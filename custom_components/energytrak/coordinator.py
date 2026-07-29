@@ -45,6 +45,7 @@ _FRESHNESS_KEYS = (
     "status",
     "active",
     "status_color",
+    "last_exercise_at",
 )
 
 
@@ -137,19 +138,21 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Read one site and all of its devices, normalised into one payload."""
         runtime = self.sites.setdefault(site_id, SiteRuntime())
 
-        # The device list is stable, so only resolve it once per restart.
-        if not runtime.device_ids:
-            site_doc = await self.client.async_get_document(SITE_COLLECTION, site_id)
-            runtime.device_ids = extract_device_ids(site_doc)
-            if not runtime.device_ids:
-                raise EnergyTrakError(f"no device linked to site {site_id}")
+        # The site document is read every poll, not just to discover devices:
+        # it carries the exercise history, which is the only record that the
+        # generator ran when the equipment feed has gone dormant.
+        site_doc = await self.client.async_get_document(SITE_COLLECTION, site_id)
+        device_ids = extract_device_ids(site_doc) or runtime.device_ids
+        if not device_ids:
+            raise EnergyTrakError(f"no device linked to site {site_id}")
+        runtime.device_ids = device_ids
 
         # A site's devices hold differently-aged copies of the telemetry, so
         # fetch them all and let normalize_site pick the best source per field.
         device_docs = await asyncio.gather(
             *(
                 self.client.async_get_document(DEVICE_COLLECTION, device_id)
-                for device_id in runtime.device_ids
+                for device_id in device_ids
             )
         )
         data = normalize_site(
@@ -157,6 +160,7 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             runtime.site_name,
             list(device_docs),
             stale_threshold_seconds=self._stale_seconds,
+            site_doc=site_doc,
         )
 
         now = datetime.now(UTC)
