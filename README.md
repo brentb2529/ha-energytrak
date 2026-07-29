@@ -1,0 +1,115 @@
+# EnergyTrak for Home Assistant
+
+Home Assistant integration for **EnergyTrak**-connected standby generators
+(Briggs & Stratton / genmon cellular monitors). Replaces the standalone Node
+wrapper service — everything runs inside Home Assistant, no extra Pi required.
+
+## Installation (HACS)
+
+1. HACS → ⋮ → **Custom repositories** → add `https://github.com/brentb2529/ha-energytrak` as an **Integration**.
+2. Install **EnergyTrak**, then restart Home Assistant.
+3. **Settings → Devices & Services → Add Integration → EnergyTrak**.
+
+Manual install: copy `custom_components/energytrak` into your HA
+`config/custom_components/` directory and restart.
+
+## Setup
+
+EnergyTrak has no password login — it uses Firebase email magic links.
+
+1. In the EnergyTrak app or website, request a sign-in link for your account.
+2. Open the email, **copy the link address** of the sign-in button. Do **not**
+   click it: the link is single-use, and opening it in a browser consumes it.
+3. Paste the link into the config flow along with your email address.
+
+The link itself is only used once. What gets stored is the long-lived Firebase
+refresh token, which the integration uses to mint short-lived access tokens
+from then on. If that token is ever revoked, Home Assistant raises a
+re-authentication prompt and you paste a fresh link.
+
+The setup flow then lists the sites your account can see. If the list is empty
+(some accounts cannot enumerate the site collection), enter site IDs manually
+as a comma-separated list.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| Polling interval | 30 s | How often each site is read. |
+| Staleness threshold | 15 min | How old the last full equipment upload may be before live readings are suppressed. |
+
+## Entities
+
+One device per site. Enabled by default:
+
+| Entity | Notes |
+| --- | --- |
+| Battery voltage, Engine hours | Engine hours is `total_increasing`, so it works in statistics. |
+| Load power, Output voltage, Output frequency, Engine speed | Generator output — see staleness handling below. |
+| Grid voltage, Grid frequency, Grid status | Utility side. |
+| Status, Operation mode, Fault condition | Controller state. |
+| Active alarms | Count, with `active_alarms` and `alarm_flags` attributes. |
+| Starts, Trips | Cumulative counters. |
+| Running, Grid power, Fault | Binary sensors. |
+| Equipment data age / stale, Last received, Last changed | Diagnostics — see below. |
+
+Disabled by default (enable per entity if your unit reports them): per-phase
+voltages, currents, apparent/reactive power, power factor, fuel type,
+ignition, health, utility monitor string.
+
+## About staleness
+
+EnergyTrak feeds two independent pipelines into the same document:
+
+- **cleanState** — a frequent heartbeat: battery, engine hours, running state.
+- **rawState.Event.EquipmentEventData** — the *full* equipment telemetry (RPM,
+  output voltage, frequency, per-phase load). Cellular units only upload this
+  on state changes and periodic check-ins, so it can be hours or months old.
+
+Trusting the second one blindly paints false zeros. The integration instead:
+
+- **Generator output fields** (RPM, output voltage/frequency, load, per-phase):
+  report `0` when the unit is known to be off — a stale zero is the correct
+  current value. Report *nothing* when the unit is running but the snapshot is
+  stale, rather than a misleading zero.
+- **Utility fields** (grid voltage/frequency): pass through at any age — the
+  grid is ~240 V / 60 Hz whenever it is present, so a stale-but-plausible
+  number beats an empty gauge. Whether the utility is actually there *right
+  now* is answered separately, and freshly, by the `Grid power` binary sensor,
+  and `Equipment data age` tells you how old the number is.
+- **Counters and engine hours**: always reported. They stay meaningful at any age.
+
+Three diagnostic entities let you tell the failure modes apart:
+
+- **Last received** — our poll succeeded. Stops advancing if HA loses network.
+- **Last changed** — EnergyTrak's payload actually moved. Stops advancing if
+  the vendor is serving an identical payload over and over, which otherwise
+  looks perfectly healthy.
+- **Equipment data age / stale** — how old the full telemetry snapshot is.
+
+## Example automation
+
+```yaml
+automation:
+  - alias: Generator started on utility loss
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.generator_running
+        to: "on"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.generator_grid_power
+        state: "off"
+    actions:
+      - action: notify.mobile_app
+        data:
+          message: >-
+            Generator started — {{ states('sensor.generator_load_power') }} W load,
+            {{ states('sensor.generator_battery_voltage') }} V battery.
+```
+
+## Disclaimer
+
+Not affiliated with or endorsed by EnergyTrak or Briggs & Stratton. It talks to
+the same private backend the mobile app uses; that backend can change without
+notice.

@@ -1,0 +1,112 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to EnergyTrak",
+        "description": "Request a sign-in link from the EnergyTrak app or website, then paste the full link from that email below. The link is single-use — do not open it in a browser first.",
+        "data": {
+          "email": "Email address",
+          "magic_link": "Sign-in link"
+        },
+        "data_description": {
+          "email": "The address the EnergyTrak sign-in link was sent to.",
+          "magic_link": "Copy the link target from the email (right-click the sign-in button → Copy link address)."
+        }
+      },
+      "sites": {
+        "title": "Choose generators",
+        "description": "Select the EnergyTrak sites to add. If none are listed, your account cannot browse the site list — enter the site IDs manually instead.",
+        "data": {
+          "site_ids": "Sites",
+          "manual_site_ids": "Additional site IDs"
+        },
+        "data_description": {
+          "manual_site_ids": "Comma-separated site IDs."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect EnergyTrak",
+        "description": "The saved credentials for {email} are no longer valid. Request a new sign-in link and paste it below.",
+        "data": {
+          "magic_link": "Sign-in link"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to EnergyTrak.",
+      "invalid_auth": "EnergyTrak rejected the sign-in.",
+      "invalid_magic_link": "That does not look like a sign-in link — it must contain apiKey and oobCode parameters.",
+      "expired_link": "That sign-in link has expired or was already used. Request a new one.",
+      "email_mismatch": "The link does not match that email address.",
+      "no_sites_selected": "Select at least one site, or enter a site ID manually.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This EnergyTrak account is already set up.",
+      "reauth_successful": "EnergyTrak reconnected successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EnergyTrak options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)",
+          "stale_minutes": "Equipment snapshot staleness threshold (minutes)"
+        },
+        "data_description": {
+          "stale_minutes": "Live readings (RPM, output voltage, load) are hidden when the last full equipment upload is older than this. Counters and engine hours are always shown."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery_voltage": { "name": "Battery voltage" },
+      "engine_hours": { "name": "Engine hours" },
+      "status": { "name": "Status" },
+      "grid_status": { "name": "Grid status" },
+      "load_power": { "name": "Load power" },
+      "output_voltage": { "name": "Output voltage" },
+      "grid_voltage": { "name": "Grid voltage" },
+      "generator_frequency": { "name": "Output frequency" },
+      "grid_frequency": { "name": "Grid frequency" },
+      "engine_speed": { "name": "Engine speed" },
+      "active_alarm_count": { "name": "Active alarms" },
+      "starts_count": { "name": "Starts" },
+      "trips_count": { "name": "Trips" },
+      "output_voltage_l1n": { "name": "Output voltage L1-N" },
+      "output_voltage_l2n": { "name": "Output voltage L2-N" },
+      "load_l1_power": { "name": "Load power L1" },
+      "load_l2_power": { "name": "Load power L2" },
+      "load_l1_current": { "name": "Load current L1" },
+      "load_l2_current": { "name": "Load current L2" },
+      "load_apparent_power": { "name": "Apparent power" },
+      "load_l1_apparent_power": { "name": "Apparent power L1" },
+      "load_l2_apparent_power": { "name": "Apparent power L2" },
+      "load_reactive_power": { "name": "Reactive power" },
+      "load_l1_reactive_power": { "name": "Reactive power L1" },
+      "load_l2_reactive_power": { "name": "Reactive power L2" },
+      "power_factor": { "name": "Power factor" },
+      "power_factor_l1": { "name": "Power factor L1" },
+      "power_factor_l2": { "name": "Power factor L2" },
+      "operation_mode": { "name": "Operation mode" },
+      "fault_condition": { "name": "Fault condition" },
+      "fuel_type": { "name": "Fuel type" },
+      "ignition_status": { "name": "Ignition" },
+      "health": { "name": "Health" },
+      "utility_monitor": { "name": "Utility monitor" },
+      "equipment_data_age": { "name": "Equipment data age" },
+      "equipment_data_timestamp": { "name": "Equipment data timestamp" },
+      "last_received": { "name": "Last received" },
+      "last_changed": { "name": "Last changed" }
+    },
+    "binary_sensor": {
+      "running": { "name": "Running" },
+      "grid_present": { "name": "Grid power" },
+      "fault": { "name": "Fault" },
+      "equipment_data_stale": { "name": "Equipment data stale" },
+      "smart_mode": { "name": "Smart mode" }
+    }
+  }
+}
