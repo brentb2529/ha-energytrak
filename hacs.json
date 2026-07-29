@@ -1,5 +1,5 @@
 {
-  "name": "EnergyTrak (Briggs & Stratton / Briggs and Stratton)",
+  "name": "EnergyTrak Generators (Briggs & Stratton)",
   "content_in_root": false,
   "render_readme": true,
   "homeassistant": "2024.12.0"
