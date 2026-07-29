@@ -29,7 +29,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EnergyTrakConfigEntry
 from .coordinator import EnergyTrakCoordinator
-from .entity import EnergyTrakEntity
+from .entity import EnergyTrakEntity, async_setup_reported_entities
 
 PARALLEL_UPDATES = 0
 
@@ -40,6 +40,9 @@ class EnergyTrakSensorDescription(SensorEntityDescription):
 
     value_fn: Callable[[dict[str, Any]], Any] = lambda data: None
     attributes_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+    # Created even when the value is missing: these are the entities that
+    # explain why other data is absent, so they must exist in exactly that case.
+    always: bool = False
 
 
 def _key(key: str) -> Callable[[dict[str, Any]], Any]:
@@ -91,6 +94,7 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
     EnergyTrakSensorDescription(
         key="status",
         translation_key="status",
+        always=True,
         value_fn=_key("status"),
     ),
     EnergyTrakSensorDescription(
@@ -391,6 +395,7 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
     EnergyTrakSensorDescription(
         key="equipment_data_age",
         translation_key="equipment_data_age",
+        always=True,
         device_class=SensorDeviceClass.DURATION,
         native_unit_of_measurement=UnitOfTime.SECONDS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -445,6 +450,7 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
     EnergyTrakSensorDescription(
         key="last_received",
         translation_key="last_received",
+        always=True,
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_timestamp("last_received_at"),
@@ -452,6 +458,7 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
     EnergyTrakSensorDescription(
         key="last_changed",
         translation_key="last_changed",
+        always=True,
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_timestamp("last_changed_at"),
@@ -466,10 +473,10 @@ async def async_setup_entry(
 ) -> None:
     """Set up the EnergyTrak sensors."""
     coordinator = entry.runtime_data
-    async_add_entities(
-        EnergyTrakSensor(coordinator, site_id, description)
-        for site_id in coordinator.site_ids
-        for description in SENSORS
+    entry.async_on_unload(
+        async_setup_reported_entities(
+            coordinator, SENSORS, EnergyTrakSensor, async_add_entities
+        )
     )
 
 

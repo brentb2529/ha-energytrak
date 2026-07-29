@@ -40,7 +40,18 @@ as a comma-separated list.
 
 ## Entities
 
-One device per site. Enabled by default:
+One device per site. **Entities are only created for fields your generator
+actually reports.** Not every unit sends every field — some controllers never
+upload equipment telemetry at all — and a row of permanently unknown values
+looks like a broken integration rather than an absent feature. A field earns
+its entity by being reported at least once, and the check repeats on every
+refresh, so if a dormant feed wakes up the entities appear on their own.
+
+The diagnostics that explain *why* data is missing (Status, Running, Fault,
+Equipment data age / stale, Last received, Last changed) are always created —
+they have to exist precisely when everything else does not.
+
+Created when reported:
 
 | Entity | Notes |
 | --- | --- |
@@ -53,9 +64,10 @@ One device per site. Enabled by default:
 | Running, Grid power, Fault | Binary sensors. |
 | Equipment data age / stale, Last received, Last changed | Diagnostics — see below. |
 
-Disabled by default (enable per entity if your unit reports them): per-phase
-voltages, currents, apparent/reactive power, power factor, fuel type,
-ignition, health, utility monitor string.
+Created but disabled by default (enable per entity): per-phase voltages,
+currents, apparent/reactive power, power factor, fuel type, ignition, health,
+utility monitor string, network strength, monitor state, firmware update
+status.
 
 ## Dashboard card
 
@@ -219,6 +231,15 @@ automation:
             Generator started — {{ states('sensor.generator_load_power') }} W load,
             {{ states('sensor.generator_battery_voltage') }} V battery.
 ```
+
+## Icon
+
+`custom_components/energytrak/brand/icon.png` (256×256, plus a 512×512 `@2x`)
+is a generic generator mark drawn for this project — an enclosure with a power
+bolt. It is **not** EnergyTrak's official logo, and is not intended to
+represent the company's branding. If you would rather ship the real mark,
+replace those two files with the official asset; note that the brand belongs
+to its owner, so check you have the right to redistribute it.
 
 ## Disclaimer
 

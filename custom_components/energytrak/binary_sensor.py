@@ -18,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import EnergyTrakConfigEntry
 from .const import IMAGE_URL_BASE
 from .coordinator import EnergyTrakCoordinator
-from .entity import EnergyTrakEntity
+from .entity import EnergyTrakEntity, async_setup_reported_entities
 
 PARALLEL_UPDATES = 0
 
@@ -52,12 +52,16 @@ class EnergyTrakBinarySensorDescription(BinarySensorEntityDescription):
 
     value_fn: Callable[[dict[str, Any]], bool | None]
     picture_fn: Callable[[dict[str, Any]], str | None] | None = None
+    # Created even when the value is missing: these are the entities that
+    # explain why other data is absent, so they must exist in exactly that case.
+    always: bool = False
 
 
 BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="running",
         translation_key="running",
+        always=True,
         device_class=BinarySensorDeviceClass.RUNNING,
         value_fn=lambda data: data.get("active"),
         # Carries the generator artwork, so a picture-entity card (or the
@@ -73,6 +77,7 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="fault",
         translation_key="fault",
+        always=True,
         device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_has_fault,
     ),
@@ -81,6 +86,7 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="equipment_data_stale",
         translation_key="equipment_data_stale",
+        always=True,
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get("equipment_data_stale"),
@@ -117,10 +123,10 @@ async def async_setup_entry(
 ) -> None:
     """Set up the EnergyTrak binary sensors."""
     coordinator = entry.runtime_data
-    async_add_entities(
-        EnergyTrakBinarySensor(coordinator, site_id, description)
-        for site_id in coordinator.site_ids
-        for description in BINARY_SENSORS
+    entry.async_on_unload(
+        async_setup_reported_entities(
+            coordinator, BINARY_SENSORS, EnergyTrakBinarySensor, async_add_entities
+        )
     )
 
 
