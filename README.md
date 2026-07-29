@@ -1,8 +1,25 @@
 # EnergyTrak for Home Assistant
 
 Home Assistant integration for **EnergyTrak**-connected standby generators
-(Briggs & Stratton / genmon cellular monitors). Replaces the standalone Node
-wrapper service — everything runs inside Home Assistant, no extra Pi required.
+(Briggs & Stratton / genmon cellular monitors). Everything runs inside Home
+Assistant — no extra hardware or bridge service.
+
+> [!WARNING]
+> **Unofficial, unsupported, and liable to break without notice.**
+>
+> This project is not affiliated with, endorsed by, or supported by Briggs &
+> Stratton, EnergyTrak, or any related company. It works by talking to the same
+> private backend their mobile app uses. That backend is undocumented and can
+> change, restrict access, or disappear at any time — if it does, this
+> integration stops working and there is nothing it can do about it.
+>
+> **Do not rely on it for anything safety-critical.** A standby generator is
+> life-safety equipment in some homes. Treat what you see here as a
+> convenience, never as a substitute for the manufacturer's own monitoring,
+> alerts, or maintenance schedule. Some units never report parts of the
+> telemetry at all — see [About staleness](#about-staleness).
+>
+> Provided as-is under the MIT licence, with no warranty of any kind.
 
 ## Installation (HACS)
 
@@ -265,6 +282,15 @@ to its owner, so check you have the right to redistribute it.
 
 ## Disclaimer
 
-Not affiliated with or endorsed by EnergyTrak or Briggs & Stratton. It talks to
-the same private backend the mobile app uses; that backend can change without
-notice.
+Not affiliated with, endorsed by, or supported by Briggs & Stratton, EnergyTrak,
+or any related company. All trademarks belong to their respective owners.
+
+This integration reads an undocumented private backend — the one the vendor's
+own mobile app uses. There is no agreement or guarantee behind it. The vendor
+may change, restrict, or withdraw that access at any time, without notice and
+without recourse, and the integration will stop working when they do.
+
+The software is provided "as is", without warranty of any kind, express or
+implied. You use it at your own risk, and you are responsible for verifying
+anything that matters against the manufacturer's own tools. Do not use it as
+the sole means of monitoring life-safety equipment.
