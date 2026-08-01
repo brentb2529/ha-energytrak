@@ -647,6 +647,35 @@ check("hours exceeding the unit's own age are flagged",
 # flag informs rather than corrects — the value is untouched.
 check("...but never silently rewritten", unscaled["engine_hours"], 1623)
 
+print("disagreeing message timestamps: newest wins")
+# Straight from a real payload. ActualDateUTC and Created both sat at the
+# original message months back while ActualDate tracked the live upload. A
+# first-match priority list read the frozen one and called minutes-old
+# telemetry three months stale, which suppressed every output reading.
+live = (NOW - timedelta(minutes=2)).strftime("%Y-%m-%dT%H:%M:%S") + ".000Z"
+mixed = {
+    "name": "projects/x/databases/(default)/documents/device/dev1",
+    "updateTime": "2026-07-29T11:59:30.123456Z",
+    "fields": {"details": m({
+        "state": m({"generatorRunning": b(False)}),
+        "rawState": m({"Event": m({
+            "MessageEventData": m({
+                "ActualDateUTC": s("2026-05-01T03:47:20"),
+                "ActualDate": s(live),
+                "Created": s("2026-04-30 23:47:31.580 -04:00"),
+            }),
+            "EquipmentEventData": m({"EngineSpeed": s("0"), "EngineHours": s("91.07")}),
+        })}),
+    })},
+}
+r = N.normalize_site("s", None, [mixed], stale_threshold_seconds=900, now=NOW)
+check("the live timestamp wins over the frozen ones",
+      r["equipment_data_age_seconds"], 120)
+check("telemetry is correctly seen as fresh", r["equipment_data_stale"], False)
+check("no corroboration needed when a timestamp is actually current",
+      r["equipment_freshness_basis"], "reported")
+check("readings are published rather than suppressed", r["engine_speed"], 0)
+
 print("runtime sources cross-check each other")
 # Two runtime fields measuring the same quantity must agree once converted.
 # When they do not, a conversion factor is wrong for that firmware — and the

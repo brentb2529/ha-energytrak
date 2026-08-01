@@ -138,16 +138,23 @@ def _view(doc: dict[str, Any]) -> _DeviceView:
         else:
             kind = "monitor"
 
-    event_ts = _parse_timestamp(
-        _find(
-            [raw],
-            [
-                "Event.MessageEventData.ActualDateUTC",
-                "Event.MessageEventData.ActualDate",
-                "Event.MessageEventData.Created",
-            ],
+    # MessageEventData carries several timestamps and they do NOT agree. On a
+    # real unit ActualDateUTC and Created both sat at the original message
+    # (2026-05-01) while ActualDate tracked the live upload to the second —
+    # so a first-match priority list picked a three-month-old value and
+    # declared perfectly fresh telemetry ancient. Take the newest instead:
+    # whichever field a given firmware keeps current is the one that wins,
+    # with no assumption about which that is.
+    candidates = [
+        _parse_timestamp(_find([raw], [path]))
+        for path in (
+            "Event.MessageEventData.ActualDate",
+            "Event.MessageEventData.ActualDateUTC",
+            "Event.MessageEventData.Created",
         )
-    )
+    ]
+    dated = [ts for ts in candidates if ts is not None]
+    event_ts = max(dated) if dated else None
     return _DeviceView(
         device_id, kind, root, clean, raw, event_ts, doc.get("updateTime")
     )
@@ -403,7 +410,9 @@ def normalize_site(
     # a verdict, it is a guess — and raising "Problem" on a unit that is
     # demonstrably delivering data is exactly the kind of confident-wrong
     # answer this module exists to avoid. Say "unknown" instead.
-    reported_age = (now - equipment_ts).total_seconds() if equipment_ts else None
+    # Clamp at zero: a controller whose clock runs fast would otherwise
+    # produce a negative age, which reads as "fresher than now".
+    reported_age = max(0.0, (now - equipment_ts).total_seconds()) if equipment_ts else None
     if content_seen_at is not None:
         # We have watched the block move: a real clock, and one that will
         # correctly age into "stale" if the feed later dies.
@@ -425,7 +434,7 @@ def normalize_site(
     equipment_age: float | None = None
     equipment_stale: bool | None = None
     if basis != "unknown" and effective_ts is not None:
-        equipment_age = (now - effective_ts).total_seconds()
+        equipment_age = max(0.0, (now - effective_ts).total_seconds())
         equipment_stale = equipment_age > stale_threshold_seconds
     else:
         effective_ts = None

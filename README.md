@@ -284,17 +284,21 @@ honestly — but on a new install it is the signature of a source whose unit is
 being read wrong. `Download diagnostics` includes `counter_sources`, listing
 every candidate's raw value side by side.
 
-### The controller's timestamp can lie
+### The controller sends several timestamps, and they disagree
 
-`EquipmentEventData` carries its own upload timestamp, and on at least one
-real unit that timestamp is simply stuck — frozen months in the past while the
-block's *contents* keep moving. On that generator, engine hours and the start
-count both stepped within seconds of a weekly exercise run, and the embedded
-timestamp never budged. Taken at face value it reported a 92-day-old snapshot
-for data that was minutes old, and because the output-field gate above keys off
-that age, it suppressed live RPM and voltage for the entire run.
+`MessageEventData` carries more than one upload time, and they do **not**
+agree. On a real unit `ActualDateUTC` and `Created` both sat at the original
+message months in the past, while `ActualDate` tracked the live upload to the
+second. Reading them as a first-match priority list picked a three-month-old
+value and declared minutes-old telemetry ancient — which, because the
+output-field gate keys off that age, suppressed every RPM and voltage reading
+the unit produced.
 
-So the timestamp is treated as a *lower* bound, not the truth. The integration
+The newest parseable timestamp wins, so whichever field a given firmware keeps
+current is the one used, with no assumption about which that is.
+
+As a second line of defence for a unit where *every* timestamp is stuck, the
+snapshot's age is also treated as a *lower* bound. The integration
 also watches whether the block's contents change between polls, and measures
 age from whichever evidence is more recent. Two properties matter:
 
