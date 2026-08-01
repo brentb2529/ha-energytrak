@@ -479,6 +479,79 @@ else:
     FAILURES.append("rejects a link with no code")
     print("  FAIL rejects a link with no code: no exception raised")
 
+print("frozen controller timestamp with live contents")
+# Reproduces a real unit: the embedded ActualDateUTC never leaves 2026-05-01
+# while the block's counters step within seconds of the weekly exercise. The
+# vendor timestamp alone reports a 92-day-old snapshot for minutes-old data,
+# and — because the output gate keys off that age — throws away live RPM.
+FROZEN = "2026-05-01T03:47:20"
+
+
+def frozen_doc(hours, starts, rpm="0"):
+    return device_doc(
+        clean={"generatorRunning": b(False)},
+        raw=plain_equip(FROZEN, EngineHours=s(hours), StartsCount=s(starts),
+                        EngineSpeed=s(rpm)),
+    )
+
+
+# Poll 1: nothing to compare against. A first sighting must NOT be read as
+# freshness, or a genuinely dead feed would look healthy forever.
+p1 = N.normalize_site("s", None, [frozen_doc("90.47", "274")],
+                      stale_threshold_seconds=900, now=NOW)
+check("first sighting establishes no freshness", p1["equipment_content_seen_at"], None)
+check("first sighting still trusts the vendor timestamp",
+      p1["equipment_data_stale"], True)
+check("first sighting does not accuse the vendor timestamp",
+      p1["equipment_timestamp_unreliable"], False)
+
+f1 = N.EquipmentFreshness(p1["equipment_signature"], p1["equipment_content_seen_at"])
+
+# Poll 2: same payload. An unchanged block proves nothing — an idle generator
+# repeats itself for days — so this must not become evidence of freshness.
+p2 = N.normalize_site("s", None, [frozen_doc("90.47", "274")],
+                      stale_threshold_seconds=900, now=NOW + timedelta(minutes=1),
+                      freshness=f1)
+check("an unchanged block is not evidence of life",
+      p2["equipment_content_seen_at"], None)
+check("still stale while nothing moves", p2["equipment_data_stale"], True)
+
+# Poll 3: the exercise runs. Counters step; the timestamp does not.
+LATER = NOW + timedelta(minutes=2)
+p3 = N.normalize_site("s", None, [frozen_doc("91.07", "275")],
+                      stale_threshold_seconds=900, now=LATER,
+                      freshness=N.EquipmentFreshness(
+                          p2["equipment_signature"], p2["equipment_content_seen_at"]))
+check("moving contents prove the block is live",
+      p3["equipment_content_seen_at"], LATER)
+check("age is measured from the observation, not the frozen clock",
+      p3["equipment_data_age_seconds"], 0)
+check("no longer falsely stale", p3["equipment_data_stale"], False)
+check("the vendor timestamp is called out as unreliable",
+      p3["equipment_timestamp_unreliable"], True)
+check("the vendor's own claim is still reported verbatim",
+      p3["equipment_reported_timestamp"], N._parse_timestamp(FROZEN))
+# The point of the whole exercise: output readings stop being suppressed.
+check("output fields are no longer gated off by a bogus age",
+      p3["engine_speed"], 0)
+
+# Poll 4: quiet again, but the earlier observation stands — freshness decays
+# from when we saw movement, not from the frozen clock.
+p4 = N.normalize_site("s", None, [frozen_doc("91.07", "275")],
+                      stale_threshold_seconds=900, now=LATER + timedelta(minutes=5),
+                      freshness=N.EquipmentFreshness(
+                          p3["equipment_signature"], p3["equipment_content_seen_at"]))
+check("observation persists across quiet polls",
+      p4["equipment_data_age_seconds"], 300)
+check("and eventually goes stale again on its own merits",
+      N.normalize_site("s", None, [frozen_doc("91.07", "275")],
+                       stale_threshold_seconds=900,
+                       now=LATER + timedelta(minutes=20),
+                       freshness=N.EquipmentFreshness(
+                           p3["equipment_signature"],
+                           p3["equipment_content_seen_at"]))["equipment_data_stale"],
+      True)
+
 print()
 print(f"{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
 sys.exit(1 if FAILURES else 0)

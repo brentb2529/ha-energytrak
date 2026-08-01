@@ -227,6 +227,36 @@ Trusting the second one blindly paints false zeros. The integration instead:
   and `Equipment data age` tells you how old the number is.
 - **Counters and engine hours**: always reported. They stay meaningful at any age.
 
+### The controller's timestamp can lie
+
+`EquipmentEventData` carries its own upload timestamp, and on at least one
+real unit that timestamp is simply stuck — frozen months in the past while the
+block's *contents* keep moving. On that generator, engine hours and the start
+count both stepped within seconds of a weekly exercise run, and the embedded
+timestamp never budged. Taken at face value it reported a 92-day-old snapshot
+for data that was minutes old, and because the output-field gate above keys off
+that age, it suppressed live RPM and voltage for the entire run.
+
+So the timestamp is treated as a *lower* bound, not the truth. The integration
+also watches whether the block's contents change between polls, and measures
+age from whichever evidence is more recent. Two properties matter:
+
+- A **changed** payload proves the block is live. An **unchanged** one proves
+  nothing — an idle generator repeats itself for days — so it never counts as
+  evidence of freshness, and a genuinely dormant feed still goes stale.
+- A first sighting establishes nothing, since there is no earlier payload to
+  compare against. Freshness requires observing a *transition*.
+
+The observation is persisted, because on a quiet generator the next change may
+not arrive until the following week's exercise, and losing it on every restart
+would mean days of falsely-stale readings.
+
+When the two disagree, the `Equipment data age` sensor says so:
+`reported_timestamp` is the controller's own claim, `content_last_seen` is when
+the data was actually observed moving, and `reported_timestamp_unreliable`
+flags the mismatch. That distinction is the difference between "your generator
+stopped reporting" and "your generator is fine, its clock field is stuck".
+
 Three diagnostic entities let you tell the failure modes apart:
 
 - **Last received** — our poll succeeded. Stops advancing if HA loses network.

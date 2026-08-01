@@ -11,6 +11,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -27,9 +28,10 @@ from .const import (
     DEFAULT_STALE_MINUTES,
     DEVICE_COLLECTION,
     DOMAIN,
+    FRESHNESS_STORE_VERSION,
     SITE_COLLECTION,
 )
-from .normalize import extract_device_ids, normalize_site
+from .normalize import EquipmentFreshness, extract_device_ids, normalize_site
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,6 +60,7 @@ class SiteRuntime:
     last_received_at: datetime | None = None
     last_changed_at: datetime | None = None
     signature: tuple[Any, ...] | None = field(default=None, repr=False)
+    freshness: EquipmentFreshness = field(default_factory=EquipmentFreshness)
 
 
 class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -84,6 +87,15 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # every poll forever, so only report when the failure changes.
         self._last_error: str | None = None
 
+        # Liveness is established by watching the equipment block change
+        # between polls, which on an idle generator can take until the next
+        # weekly exercise. Losing that observation on every restart would
+        # mean a week of falsely-stale readings, so it is persisted.
+        self._store: Store[dict[str, Any]] = Store(
+            hass, FRESHNESS_STORE_VERSION, f"{DOMAIN}.{entry.entry_id}.freshness"
+        )
+        self._store_loaded = False
+
         scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         self._stale_seconds = (
             int(entry.options.get(CONF_STALE_MINUTES, DEFAULT_STALE_MINUTES)) * 60
@@ -97,14 +109,57 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             update_interval=timedelta(seconds=scan_interval),
         )
 
+    async def _async_load_freshness(self) -> None:
+        """Restore what earlier runs learned about equipment liveness."""
+        self._store_loaded = True
+        stored = await self._store.async_load() or {}
+        for site_id, record in (stored.get("sites") or {}).items():
+            runtime = self.sites.setdefault(site_id, SiteRuntime())
+            seen_raw = record.get("seen_at")
+            seen_at: datetime | None = None
+            if seen_raw:
+                try:
+                    seen_at = datetime.fromisoformat(seen_raw)
+                except ValueError:
+                    seen_at = None
+            runtime.freshness = EquipmentFreshness(
+                signature=record.get("signature"), seen_at=seen_at
+            )
+
+    async def _async_save_freshness(self) -> None:
+        """Persist the current signature/observation for every site."""
+        await self._store.async_save(
+            {
+                "sites": {
+                    site_id: {
+                        "signature": runtime.freshness.signature,
+                        "seen_at": (
+                            runtime.freshness.seen_at.isoformat()
+                            if runtime.freshness.seen_at
+                            else None
+                        ),
+                    }
+                    for site_id, runtime in self.sites.items()
+                    if runtime.freshness.signature
+                }
+            }
+        )
+
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Poll every configured site."""
+        if not self._store_loaded:
+            await self._async_load_freshness()
+
         results: dict[str, dict[str, Any]] = dict(self.data or {})
         errors: list[str] = []
+        freshness_changed = False
 
         for site_id in self.site_ids:
+            before = self.sites.get(site_id, SiteRuntime()).freshness
             try:
                 results[site_id] = await self._async_fetch_site(site_id)
+                if self.sites[site_id].freshness != before:
+                    freshness_changed = True
             except EnergyTrakAuthError as err:
                 raise ConfigEntryAuthFailed(
                     f"EnergyTrak authentication failed: {err}"
@@ -131,6 +186,12 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         elif self._last_error:
             _LOGGER.info("EnergyTrak polling recovered")
         self._last_error = summary
+
+        # Rare by construction — the signature only moves when the vendor
+        # actually pushes new equipment telemetry — so this is not a
+        # per-poll write.
+        if freshness_changed:
+            await self._async_save_freshness()
 
         return results
 
@@ -161,6 +222,11 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             list(device_docs),
             stale_threshold_seconds=self._stale_seconds,
             site_doc=site_doc,
+            freshness=runtime.freshness,
+        )
+        runtime.freshness = EquipmentFreshness(
+            signature=data.get("equipment_signature"),
+            seen_at=data.get("equipment_content_seen_at"),
         )
 
         now = datetime.now(UTC)

@@ -22,6 +22,11 @@ CONF_STALE_MINUTES: Final = "stale_minutes"
 DEFAULT_SCAN_INTERVAL: Final = 30
 DEFAULT_STALE_MINUTES: Final = 15
 
+# Storage for the observed equipment-liveness signature (see
+# normalize.EquipmentFreshness). Kept out of the config entry so it can be
+# discarded without touching credentials.
+FRESHNESS_STORE_VERSION: Final = 1
+
 # Google / Firebase endpoints. EnergyTrak is a Firebase app: authentication
 # runs through IdentityToolkit email-link sign-in and the device telemetry
 # lives in Firestore documents that the signed-in user can read directly.

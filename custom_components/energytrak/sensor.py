@@ -402,6 +402,13 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         attributes_fn=lambda data: {
             "equipment_source": data.get("equipment_source"),
             "devices": data.get("device_ids") or [],
+            # When these disagree, the controller's clock field is stuck and
+            # the age above is the one measured from observed data movement.
+            "reported_timestamp": data.get("equipment_reported_timestamp"),
+            "content_last_seen": data.get("equipment_content_seen_at"),
+            "reported_timestamp_unreliable": data.get(
+                "equipment_timestamp_unreliable"
+            ),
         },
     ),
     # Monitor-side diagnostics. When telemetry stops arriving these explain

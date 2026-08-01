@@ -27,6 +27,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Any
 
 # Matches both shapes the controller emits:
@@ -274,6 +275,41 @@ _STARTS_PATHS = ["Event.EquipmentEventData.StartsCount"]
 _TRIPS_PATHS = ["Event.EquipmentEventData.TripsCount"]
 
 
+@dataclass
+class EquipmentFreshness:
+    """What earlier polls learned about the equipment block's liveness.
+
+    ``Event.MessageEventData.ActualDateUTC`` is the controller's own claim
+    about when it last uploaded telemetry, and on at least one real unit it
+    is simply wrong: the block's *contents* advance — engine hours and the
+    start count both stepped within seconds of a weekly exercise — while the
+    embedded timestamp stays frozen months in the past. Trusting it reported
+    a 92-day-old snapshot for data that was minutes old, and, because the
+    output-field gate keys off that age, suppressed live RPM and voltage for
+    the entire run.
+
+    Content movement is proof of life that a self-reported timestamp is not.
+    Note the asymmetry: a *changed* signature proves the block is live, but
+    an unchanged one proves nothing (a healthy idle generator repeats the
+    same payload for days). So this only ever makes the age younger, never
+    older, and a first sighting establishes nothing — freshness requires
+    seeing a transition from a previously known signature.
+    """
+
+    signature: str | None = None
+    seen_at: datetime | None = None
+
+
+def _equipment_signature(raw_state: Any) -> str | None:
+    """Stable digest of the equipment block, or None when it is absent."""
+    block = _find([raw_state], ["Event.EquipmentEventData"])
+    if not isinstance(block, dict) or not block:
+        return None
+    return sha256(
+        json.dumps(block, sort_keys=True, default=str).encode()
+    ).hexdigest()[:16]
+
+
 def normalize_site(
     site_id: str,
     site_name: str | None,
@@ -282,6 +318,7 @@ def normalize_site(
     stale_threshold_seconds: int,
     site_doc: dict[str, Any] | None = None,
     now: datetime | None = None,
+    freshness: EquipmentFreshness | None = None,
 ) -> dict[str, Any]:
     """Build the flat telemetry dict the entities read from.
 
@@ -328,11 +365,42 @@ def normalize_site(
     ]
 
     # --- Equipment-snapshot age -------------------------------------
+    # The controller's own timestamp is a *lower* bound on freshness, not the
+    # truth — see EquipmentFreshness. Having watched the block's contents
+    # move is stronger evidence, so the effective age is measured from
+    # whichever is more recent.
     equipment_ts = snapshot.event_ts
+    previous = freshness or EquipmentFreshness()
+    signature = _equipment_signature(raw_state)
+
+    if signature is None or previous.signature is None:
+        # Nothing to compare against yet: carry forward what we knew, and
+        # record the signature so the *next* poll can detect a transition.
+        content_seen_at = previous.seen_at
+    elif signature != previous.signature:
+        content_seen_at = now
+    else:
+        content_seen_at = previous.seen_at
+
+    effective_ts = equipment_ts
+    if content_seen_at is not None and (
+        effective_ts is None or content_seen_at > effective_ts
+    ):
+        effective_ts = content_seen_at
+
     equipment_age: float | None = None
-    if equipment_ts is not None:
-        equipment_age = (now - equipment_ts).total_seconds()
+    if effective_ts is not None:
+        equipment_age = (now - effective_ts).total_seconds()
     equipment_stale = equipment_age is not None and equipment_age > stale_threshold_seconds
+
+    # Worth surfacing: it means the vendor timestamp is lying, and it is the
+    # difference between "your generator stopped reporting" and "your
+    # generator is fine, its clock field is stuck".
+    timestamp_unreliable = (
+        content_seen_at is not None
+        and equipment_ts is not None
+        and content_seen_at > equipment_ts
+    )
 
     # --- Fresh "is it running?" signal, from cleanState only ---------
     # The composite `active` flag below also consults stale rawState fields;
@@ -622,11 +690,18 @@ def normalize_site(
         # Freshness
         "clean_state_last_updated": _find([clean_state], ["lastUpdated"]),
         "document_updated_at": generator.updated_at,
-        "equipment_data_timestamp": equipment_ts,
+        # The effective timestamp, so this and the age below cannot disagree.
+        "equipment_data_timestamp": effective_ts,
         "equipment_data_age_seconds": (
             int(equipment_age) if equipment_age is not None else None
         ),
         "equipment_data_stale": equipment_stale,
+        # The vendor's own claim, kept verbatim next to the age we actually
+        # trust — when the two disagree, that disagreement is the diagnosis.
+        "equipment_reported_timestamp": equipment_ts,
+        "equipment_content_seen_at": content_seen_at,
+        "equipment_timestamp_unreliable": timestamp_unreliable,
+        "equipment_signature": signature,
     }
 
 
