@@ -218,6 +218,25 @@ def _find(sources: list[Any], paths: list[str]) -> Any:
     return None
 
 
+def _candidates(labelled: list[tuple[str, Any]], paths: list[str]) -> dict[str, Any]:
+    """Every value each source holds for ``paths``.
+
+    The cumulative counters are read from the first of several candidate
+    fields that carries a value, which means the reported number alone does
+    not say *where* it came from. When a counter looks wrong on someone
+    else's unit — hardware we cannot see — this is the only way to tell a
+    faithful pass-through of an odd vendor number from us reading the wrong
+    field, or one in different units. Surfaced through diagnostics only.
+    """
+    found: dict[str, Any] = {}
+    for label, root in labelled:
+        for path in paths:
+            value = _find([root], [path])
+            if value is not None:
+                found[f"{label}:{path}"] = value
+    return found
+
+
 def _parse_timestamp(raw: Any) -> datetime | None:
     """Parse an EnergyTrak event timestamp; naive values are treated as UTC."""
     if raw is None:
@@ -241,6 +260,18 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # ----------------------------------------------------------------------
 # Normalisation
 # ----------------------------------------------------------------------
+
+# Engine hours, in priority order. Different firmware populates different
+# ones, so the first with a non-zero value wins. Kept as a constant so the
+# reading and its provenance cannot drift apart.
+_ENGINE_HOUR_PATHS = [
+    "engineRuntimeHours",
+    "Event.EquipmentEventData.EngineHours",
+    "Event.DeviceEventData.EngineHoursTP",
+    "Equipment.EngineHours",
+]
+_STARTS_PATHS = ["Event.EquipmentEventData.StartsCount"]
+_TRIPS_PATHS = ["Event.EquipmentEventData.TripsCount"]
 
 
 def normalize_site(
@@ -288,6 +319,13 @@ def normalize_site(
 
     sources: list[Any] = [clean_state, raw_state, parsed_device]
     fresh_sources: list[Any] = [clean_state, parsed_device]
+    # Same list, labelled by role rather than by device id — the ids embed the
+    # unit's serial, and diagnostics get shared.
+    labelled_sources: list[tuple[str, Any]] = [
+        ("cleanState", clean_state),
+        (f"rawState({snapshot.kind})", raw_state),
+        ("device", parsed_device),
+    ]
 
     # --- Equipment-snapshot age -------------------------------------
     equipment_ts = snapshot.event_ts
@@ -359,10 +397,7 @@ def normalize_site(
     # counter from the equipment event, so skip zeros unless every source
     # agrees (a genuinely brand-new install).
     hour_candidates = [
-        _to_number(_find(sources, ["engineRuntimeHours"])),
-        _to_number(_find(sources, ["Event.EquipmentEventData.EngineHours"])),
-        _to_number(_find(sources, ["Event.DeviceEventData.EngineHoursTP"])),
-        _to_number(_find(sources, ["Equipment.EngineHours"])),
+        _to_number(_find(sources, [path])) for path in _ENGINE_HOUR_PATHS
     ]
     engine_hours = next((v for v in hour_candidates if v not in (None, 0)), None)
     if engine_hours is None and any(v == 0 for v in hour_candidates):
@@ -524,8 +559,14 @@ def normalize_site(
             ["Event.EquipmentEventData.GeneratorAveragePowerFactor"]
         ),
         # Cumulative counters stay informative even when the snapshot is old.
-        "starts_count": _to_number(_find(sources, ["Event.EquipmentEventData.StartsCount"])),
-        "trips_count": _to_number(_find(sources, ["Event.EquipmentEventData.TripsCount"])),
+        "starts_count": _to_number(_find(sources, _STARTS_PATHS)),
+        "trips_count": _to_number(_find(sources, _TRIPS_PATHS)),
+        # Provenance for the cumulative counters — diagnostics only, no entity.
+        "counter_sources": {
+            "engine_hours": _candidates(labelled_sources, _ENGINE_HOUR_PATHS),
+            "starts_count": _candidates(labelled_sources, _STARTS_PATHS),
+            "trips_count": _candidates(labelled_sources, _TRIPS_PATHS),
+        },
         # Status / metadata
         "fuel_type": _find(
             sources, ["Event.EquipmentEventData.FuelType", "Equipment.FuelTypeTP"]

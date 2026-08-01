@@ -359,6 +359,20 @@ check("network strength", r["network_strength"], "excellent")
 check("generator name preferred", r["name"], "Example Generator")
 check("ancient snapshot: no invented zero", r["engine_speed"], None)
 
+# Provenance: the reported 90.47 must be traceable to the field it came from,
+# and the losing candidates must be visible alongside it. Without this, a
+# counter that looks wrong on hardware we cannot see is unfalsifiable.
+prov = r["counter_sources"]["engine_hours"]
+check("cleanState's zero is recorded, not silently dropped",
+      prov.get("cleanState:engineRuntimeHours"), "0")
+check("the winning field is named",
+      prov.get("rawState(monitor):Event.EquipmentEventData.EngineHours"), "90.47")
+check("provenance labels the source by role, not by serial",
+      any("1234567890" in k for k in prov), False)
+check("starts provenance recorded",
+      r["counter_sources"]["starts_count"].get(
+          "rawState(monitor):Event.EquipmentEventData.StartsCount"), "274")
+
 print("triggeredFaults become alarms")
 mon_faults = named_doc(
     "site-genmon",
