@@ -388,10 +388,37 @@ def normalize_site(
     ):
         effective_ts = content_seen_at
 
+    # Three cases, and the third is the one that matters. A stale verdict
+    # resting only on a field we have proven can be permanently frozen is not
+    # a verdict, it is a guess — and raising "Problem" on a unit that is
+    # demonstrably delivering data is exactly the kind of confident-wrong
+    # answer this module exists to avoid. Say "unknown" instead.
+    reported_age = (now - equipment_ts).total_seconds() if equipment_ts else None
+    if content_seen_at is not None:
+        # We have watched the block move: a real clock, and one that will
+        # correctly age into "stale" if the feed later dies.
+        basis = "observed"
+    elif reported_age is not None and reported_age <= _OFF_MEANS_ZERO_MAX_AGE_SECONDS:
+        # The claim is plausible, so believe it. Note the bound is the
+        # credibility window, *not* the user's staleness threshold: a
+        # three-hour-old snapshot is ordinary for a cellular check-in and
+        # says nothing bad about the clock, even though the default 15-minute
+        # threshold will (correctly) call it stale.
+        basis = "reported"
+    else:
+        # A claim older than any plausible check-in, never corroborated.
+        # "The feed died" and "the clock field is stuck" are indistinguishable
+        # from here, and both leave every reading unusable anyway — so the
+        # only thing lost by declining to guess is a confident wrong alarm.
+        basis = "unknown"
+
     equipment_age: float | None = None
-    if effective_ts is not None:
+    equipment_stale: bool | None = None
+    if basis != "unknown" and effective_ts is not None:
         equipment_age = (now - effective_ts).total_seconds()
-    equipment_stale = equipment_age is not None and equipment_age > stale_threshold_seconds
+        equipment_stale = equipment_age > stale_threshold_seconds
+    else:
+        effective_ts = None
 
     # Worth surfacing: it means the vendor timestamp is lying, and it is the
     # difference between "your generator stopped reporting" and "your
@@ -419,8 +446,12 @@ def normalize_site(
         value = _find(sources, paths)
         if value is None:
             return None
-        # Only rawState-sourced values are subject to snapshot staleness.
-        if _find(fresh_sources, paths) is None and equipment_stale:
+        # Only rawState-sourced values are subject to snapshot staleness, and
+        # they pass only when the snapshot is *known* to be fresh. Note the
+        # `is not False`: an unknown age must suppress exactly like a stale
+        # one, or withholding the staleness verdict would silently start
+        # publishing month-old readings as current.
+        if _find(fresh_sources, paths) is None and equipment_stale is not False:
             return None
         return _to_number(value)
 
@@ -432,7 +463,9 @@ def normalize_site(
         is running, a stale zero is suspect (the snapshot may predate the
         start), so report nothing rather than a false zero.
 
-        The off-means-zero shortcut has an upper age bound. It is sound for a
+        The off-means-zero shortcut needs the age to be both *known* and
+        recent. An unknown age is not a young one — see the freshness basis
+        below — so it suppresses too. It is sound for a
         snapshot minutes or hours old, but some units never upload equipment
         telemetry at all — one real generator produced zero non-zero readings
         across 450,000 polls spanning five months and twenty-odd exercise
@@ -440,8 +473,10 @@ def normalize_site(
         presents an *absence of data* as a measurement. Past the bound, report
         nothing so the gap is visible.
         """
-        if generator_running is False and (
-            equipment_age is None or equipment_age <= _OFF_MEANS_ZERO_MAX_AGE_SECONDS
+        if (
+            generator_running is False
+            and equipment_age is not None
+            and equipment_age <= _OFF_MEANS_ZERO_MAX_AGE_SECONDS
         ):
             return 0
         return instantaneous(paths)
@@ -701,6 +736,8 @@ def normalize_site(
         "equipment_reported_timestamp": equipment_ts,
         "equipment_content_seen_at": content_seen_at,
         "equipment_timestamp_unreliable": timestamp_unreliable,
+        # "observed" | "reported" | "unknown" — what the age above rests on.
+        "equipment_freshness_basis": basis,
         "equipment_signature": signature,
     }
 

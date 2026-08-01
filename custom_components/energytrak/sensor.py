@@ -409,6 +409,7 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
             "reported_timestamp_unreliable": data.get(
                 "equipment_timestamp_unreliable"
             ),
+            "freshness_basis": data.get("equipment_freshness_basis"),
         },
     ),
     # Monitor-side diagnostics. When telemetry stops arriving these explain

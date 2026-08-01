@@ -91,6 +91,14 @@ BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get("equipment_data_stale"),
+        # Unknown is a real answer here, not a gap: on a controller whose
+        # timestamp is frozen we cannot tell a dead feed from a stuck clock
+        # until the block is seen to move. This says which case you are in.
+        attributes_fn=lambda data: {
+            "freshness_basis": data.get("equipment_freshness_basis"),
+            "reported_timestamp": data.get("equipment_reported_timestamp"),
+            "content_last_seen": data.get("equipment_content_seen_at"),
+        },
     ),
     # Site-level malfunction flag, raised by EnergyTrak's own outage manager
     # rather than by the controller.

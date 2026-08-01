@@ -123,21 +123,24 @@ check("ancient snapshot: no invented zero", r["output_voltage"], None)
 check("grid_voltage passes through stale", r["grid_voltage"], 243)
 check("grid_frequency passes through stale", r["grid_frequency"], 59.9)
 check("starts_count survives staleness", r["starts_count"], 37)
-check("equipment_data_stale", r["equipment_data_stale"], True)
+# Months old and never corroborated: no verdict, because a frozen clock and
+# a dead feed are indistinguishable here. Readings stay suppressed either way.
+check("uncorroborated ancient snapshot: no verdict",
+      r["equipment_data_stale"], None)
+check("basis says why", r["equipment_freshness_basis"], "unknown")
 check("grid_status from utilityPresent", r["grid_status"], "Present")
 check("active_alarms", r["active_alarms"], ["LowOilPressureAlarm", "OverspeedAlarm"])
 check("active_alarm_count", r["active_alarm_count"], 2)
 check("alarm_flags cleared entry", r["alarm_flags"]["HighCoolantTemperatureAlarm"], False)
+# The vendor's claim is still parsed and reported verbatim — it is just no
+# longer treated as the effective age.
 check(
     "naive timestamp treated as UTC",
-    r["equipment_data_timestamp"],
+    r["equipment_reported_timestamp"],
     datetime(2026, 4, 19, 11, 20, 17, tzinfo=UTC),
 )
-check(
-    "age in seconds",
-    r["equipment_data_age_seconds"],
-    int((NOW - datetime(2026, 4, 19, 11, 20, 17, tzinfo=UTC)).total_seconds()),
-)
+check("no age is asserted from a discredited timestamp",
+      r["equipment_data_age_seconds"], None)
 check("active", r["active"], False)
 
 # --- Stale snapshot, generator RUNNING -> output fields report nothing ---
@@ -169,7 +172,7 @@ check("active", r["active"], True)
 check("grid_status lost", r["grid_status"], "Lost")
 check(
     "offset timestamp parsed",
-    r["equipment_data_timestamp"].astimezone(UTC),
+    r["equipment_reported_timestamp"].astimezone(UTC),
     datetime(2026, 4, 19, 11, 20, 17, tzinfo=UTC),
 )
 
@@ -428,8 +431,12 @@ check("empty description is not surfaced", r["malfunction_description"], None)
 check("site state", r["site_state"], "ready")
 check("subscription", r["subscription_active"], True)
 check("no run in progress", r["run_session"], None)
+# The point of the fixture: the equipment feed is not known to be fresh (here,
+# not knowable at all), and the exercise history comes through regardless
+# because it rides on the site document, not the equipment snapshot.
+check("equipment feed is not fresh", r["equipment_data_stale"] is False, False)
 check("exercise data survives a dormant equipment feed",
-      r["equipment_data_stale"], True)
+      r["last_exercise_at"] is not None, True)
 
 print("site document absent")
 r = N.normalize_site("x", None, [gen_doc], stale_threshold_seconds=900, now=NOW)
@@ -500,10 +507,18 @@ def frozen_doc(hours, starts, rpm="0"):
 p1 = N.normalize_site("s", None, [frozen_doc("90.47", "274")],
                       stale_threshold_seconds=900, now=NOW)
 check("first sighting establishes no freshness", p1["equipment_content_seen_at"], None)
-check("first sighting still trusts the vendor timestamp",
-      p1["equipment_data_stale"], True)
+# An old claim we have never corroborated is genuinely ambiguous: "the feed
+# died" and "the clock field is stuck" look identical. Raising Problem on a
+# unit that is demonstrably delivering data would be a confident wrong answer,
+# so the verdict is withheld rather than guessed.
+check("an uncorroborated old timestamp yields no verdict",
+      p1["equipment_data_stale"], None)
+check("...and no age", p1["equipment_data_age_seconds"], None)
+check("...and says so", p1["equipment_freshness_basis"], "unknown")
 check("first sighting does not accuse the vendor timestamp",
       p1["equipment_timestamp_unreliable"], False)
+# An unknown age is not a young one — it must not license a synthesised zero.
+check("unknown age does not synthesise a zero reading", p1["engine_speed"], None)
 
 f1 = N.EquipmentFreshness(p1["equipment_signature"], p1["equipment_content_seen_at"])
 
@@ -514,7 +529,7 @@ p2 = N.normalize_site("s", None, [frozen_doc("90.47", "274")],
                       freshness=f1)
 check("an unchanged block is not evidence of life",
       p2["equipment_content_seen_at"], None)
-check("still stale while nothing moves", p2["equipment_data_stale"], True)
+check("still no verdict while nothing moves", p2["equipment_data_stale"], None)
 
 # Poll 3: the exercise runs. Counters step; the timestamp does not.
 LATER = NOW + timedelta(minutes=2)
@@ -527,6 +542,7 @@ check("moving contents prove the block is live",
 check("age is measured from the observation, not the frozen clock",
       p3["equipment_data_age_seconds"], 0)
 check("no longer falsely stale", p3["equipment_data_stale"], False)
+check("the verdict now rests on observation", p3["equipment_freshness_basis"], "observed")
 check("the vendor timestamp is called out as unreliable",
       p3["equipment_timestamp_unreliable"], True)
 check("the vendor's own claim is still reported verbatim",
@@ -551,6 +567,19 @@ check("and eventually goes stale again on its own merits",
                            p3["equipment_signature"],
                            p3["equipment_content_seen_at"]))["equipment_data_stale"],
       True)
+
+# A controller whose clock works is unaffected: a *fresh* claim is trustworthy
+# on its own, because a stuck timestamp only ever reads old. No waiting for a
+# transition, no unknown period.
+healthy = N.normalize_site(
+    "s", None,
+    [device_doc(clean={"generatorRunning": b(False)},
+                raw=plain_equip("2026-07-29T11:55:00", EngineSpeed=s("0")))],
+    stale_threshold_seconds=900, now=NOW)
+check("a fresh vendor timestamp is believed without corroboration",
+      healthy["equipment_data_stale"], False)
+check("basis is the report itself", healthy["equipment_freshness_basis"], "reported")
+check("and readings are not suppressed", healthy["engine_speed"], 0)
 
 print()
 print(f"{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))

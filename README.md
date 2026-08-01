@@ -251,7 +251,22 @@ The observation is persisted, because on a quiet generator the next change may
 not arrive until the following week's exercise, and losing it on every restart
 would mean days of falsely-stale readings.
 
-When the two disagree, the `Equipment data age` sensor says so:
+Until that transition is seen, the integration does not guess. On a snapshot
+older than any plausible check-in that it has never corroborated, "the feed
+died" and "the clock field is stuck" are indistinguishable — so **Equipment
+data stale** reports `unknown` rather than raising a Problem, and the age goes
+unknown with it. Raising an alarm on a generator that is visibly delivering
+data would be a confident wrong answer, which is the failure this whole
+section exists to avoid. Readings stay suppressed throughout, so nothing is
+published as current that isn't.
+
+A controller whose clock works is unaffected: a plausible timestamp is
+believed on its own, with no waiting period. `freshness_basis` on both
+entities says which of the three cases you are in — `observed`, `reported` or
+`unknown`.
+
+When the reported and observed timestamps disagree, the `Equipment data age`
+sensor says so:
 `reported_timestamp` is the controller's own claim, `content_last_seen` is when
 the data was actually observed moving, and `reported_timestamp_unreliable`
 flags the mismatch. That distinction is the difference between "your generator
