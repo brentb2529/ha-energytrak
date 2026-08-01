@@ -536,6 +536,29 @@ def normalize_site(
     if engine_hours is None and saw_zero:
         engine_hours = 0
 
+    # Self-calibration. When a controller populates more than one runtime
+    # field, the candidates measure the same quantity and must agree once
+    # converted — so any disagreement means a conversion factor above is
+    # wrong for this firmware. A ratio near 60 is the signature of a
+    # minutes/hours mix-up, near 3600 of seconds/hours.
+    #
+    # This needs no knowledge of what the vendor's own app displays: the
+    # payload cross-checks itself. It only works on units that report two
+    # or more sources, which is why the commissioning-age guard exists as
+    # well — that one covers the single-source case.
+    candidates_in_hours = {
+        path: _to_number(_find(sources, [path])) * to_hours
+        for path, to_hours in _ENGINE_HOUR_SOURCES
+        if _to_number(_find(sources, [path])) not in (None, 0)
+    }
+    engine_hours_disagreement: float | None = None
+    if len(candidates_in_hours) > 1:
+        low, high = min(candidates_in_hours.values()), max(candidates_in_hours.values())
+        # Tolerate ordinary skew: the sources are snapshots taken at
+        # different moments, so they differ by minutes, not by factors.
+        if low > 0 and high / low > 1.05 and high - low > 0.5:
+            engine_hours_disagreement = round(high / low, 2)
+
     # A unit cannot have run for longer than it has existed. This does not
     # correct the value — a generator retrofitted with a monitor legitimately
     # carries hours predating its EnergyTrak commissioning — but a reading
@@ -714,6 +737,19 @@ def normalize_site(
         # Provenance for the cumulative counters — diagnostics only, no entity.
         "engine_hours_source": engine_hours_source,
         "engine_hours_implausible": engine_hours_implausible,
+        "engine_hours_disagreement_ratio": engine_hours_disagreement,
+        "engine_hours_candidates_hours": {
+            path: round(value, 3) for path, value in candidates_in_hours.items()
+        },
+        # The telemetry blocks verbatim, for diagnostics only. We have been
+        # guessing at field semantics from names alone; if a controller does
+        # declare its units anywhere, it is in here. Telemetry rather than
+        # identity, and diagnostics redacts on top.
+        "raw_event_blocks": {
+            name: block
+            for name in ("EquipmentEventData", "DeviceEventData", "MessageEventData")
+            if isinstance(block := _find([raw_state], [f"Event.{name}"]), dict)
+        },
         "counter_sources": {
             "engine_hours": _candidates(labelled_sources, _ENGINE_HOUR_PATHS),
             "starts_count": _candidates(labelled_sources, _STARTS_PATHS),

@@ -244,6 +244,25 @@ is not. The conversion is attached to the field, never inferred from the size
 of the number: a generator retrofitted with a monitor legitimately carries
 hours that dwarf its EnergyTrak commissioning date.
 
+Nothing in the payload observed so far declares its own units, so the field
+name is the only signal — which is exactly why the mistake was possible. Two
+independent checks now catch a wrong factor without anyone having to know what
+the vendor's app displays:
+
+- **Sources cross-check each other.** When a controller populates more than
+  one runtime field, they measure the same quantity and must agree once
+  converted. A disagreement means a factor is wrong for that firmware, and the
+  ratio names the mistake — near 60 is minutes read as hours, near 3600 is
+  seconds. This is logged as a warning, not buried in diagnostics, since
+  nobody pulls diagnostics for a number that merely looks a bit off. Ordinary
+  skew between snapshots taken moments apart is tolerated.
+- **The commissioning-age guard** covers the single-source case, where there
+  is nothing to compare against.
+
+Diagnostics now also include the raw `EquipmentEventData`, `DeviceEventData`
+and `MessageEventData` blocks verbatim (identity keys redacted), so field
+semantics can be settled from real payloads instead of inferred from names.
+
 The `Engine hours` sensor exposes `source_field` so you can see which one won,
 and `exceeds_time_since_commissioning`, which flags a reading larger than the
 unit's own age. That flag informs rather than corrects — retrofits trip it

@@ -647,6 +647,47 @@ check("hours exceeding the unit's own age are flagged",
 # flag informs rather than corrects — the value is untouched.
 check("...but never silently rewritten", unscaled["engine_hours"], 1623)
 
+print("runtime sources cross-check each other")
+# Two runtime fields measuring the same quantity must agree once converted.
+# When they do not, a conversion factor is wrong for that firmware — and the
+# ratio names the mistake: ~60 is minutes read as hours, ~3600 is seconds.
+# This needs no knowledge of what the vendor's app displays; the payload
+# checks itself.
+def two_source_doc(runtime_hours, tp_minutes):
+    return {
+        "name": "projects/x/databases/(default)/documents/device/dev1",
+        "updateTime": "2026-07-29T11:59:30.123456Z",
+        "fields": {"details": m({
+            "state": m({"generatorRunning": b(False),
+                        "engineRuntimeHours": s(runtime_hours)}),
+            "rawState": m({"Event": m({
+                "MessageEventData": m({"ActualDateUTC": s(fresh)}),
+                "DeviceEventData": m({"EngineHoursTP": s(tp_minutes)}),
+            })}),
+        })},
+    }
+
+
+# Correct factor: 27.05 h and 1623 min are the same reading. No complaint.
+agree = N.normalize_site("s", None, [two_source_doc("27.05", "1623")],
+                         stale_threshold_seconds=900, now=NOW)
+check("consistent sources raise nothing", agree["engine_hours_disagreement_ratio"], None)
+
+# Wrong factor: if EngineHoursTP were read as hours it would be 60x the other.
+disagree = N.normalize_site("s", None, [two_source_doc("27.05", "97380")],
+                            stale_threshold_seconds=900, now=NOW)
+check("a 60x mismatch is detected", disagree["engine_hours_disagreement_ratio"], 60.0)
+
+# Snapshots are taken at different moments, so small skew is normal and must
+# not cry wolf on every poll.
+skew = N.normalize_site("s", None, [two_source_doc("27.05", "1621")],
+                        stale_threshold_seconds=900, now=NOW)
+check("ordinary skew between snapshots is tolerated",
+      skew["engine_hours_disagreement_ratio"], None)
+
+check("raw telemetry blocks are captured for diagnostics",
+      sorted(disagree["raw_event_blocks"]), ["DeviceEventData", "MessageEventData"])
+
 print()
 print(f"{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
 sys.exit(1 if FAILURES else 0)

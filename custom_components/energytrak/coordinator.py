@@ -86,6 +86,7 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # A prolonged vendor outage would otherwise log the same warning on
         # every poll forever, so only report when the failure changes.
         self._last_error: str | None = None
+        self._warned_hour_sources: set[str] = set()
 
         # Liveness is established by watching the equipment block change
         # between polls, which on an idle generator can take until the next
@@ -228,6 +229,24 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             signature=data.get("equipment_signature"),
             seen_at=data.get("equipment_content_seen_at"),
         )
+
+        # A unit whose runtime sources disagree once converted is telling us a
+        # conversion factor is wrong for its firmware. Say so in the log
+        # rather than only in diagnostics — nobody pulls diagnostics for a
+        # number that merely looks a bit off. Once per site per run.
+        ratio = data.get("engine_hours_disagreement_ratio")
+        if ratio and site_id not in self._warned_hour_sources:
+            self._warned_hour_sources.add(site_id)
+            _LOGGER.warning(
+                "Engine-hour sources disagree by %sx for site %s (%s). One of these "
+                "fields is not in the unit this integration assumes; a ratio near 60 "
+                "means minutes, near 3600 means seconds. Please report this with "
+                "your diagnostics: %s",
+                ratio,
+                site_id,
+                data.get("engine_hours_source"),
+                data.get("engine_hours_candidates_hours"),
+            )
 
         now = datetime.now(UTC)
         signature = tuple(str(data.get(key)) for key in _FRESHNESS_KEYS)

@@ -10,6 +10,9 @@ from homeassistant.core import HomeAssistant
 from . import EnergyTrakConfigEntry
 from .const import CONF_API_KEY, CONF_EMAIL, CONF_REFRESH_TOKEN
 
+# The raw telemetry blocks are included verbatim so field semantics can be
+# worked out from real payloads, which means the identifying keys a
+# controller mixes in there have to be named explicitly.
 TO_REDACT = {
     CONF_API_KEY,
     CONF_EMAIL,
@@ -17,6 +20,20 @@ TO_REDACT = {
     "latitude",
     "longitude",
     "serial_number",
+    "Latitude",
+    "Longitude",
+    "EquipmentSerial",
+    "DeviceSerial",
+    "SerialNumber",
+    "IMEI",
+    "ICCID",
+    "IMSI",
+    "MSISDN",
+    "PhoneNumber",
+    "SimNumber",
+    "OwnerName",
+    "CustomerName",
+    "Address",
 }
 
 
