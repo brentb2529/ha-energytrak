@@ -51,6 +51,20 @@ refresh token, which the integration uses to mint short-lived access tokens
 from then on. If that token is ever revoked, Home Assistant raises a
 re-authentication prompt and you paste a fresh link.
 
+### Replacing the sign-in later
+
+**Settings → Devices & Services → EnergyTrak → ⋮ → Reconfigure** takes a fresh
+magic link at any time. Use it whenever you sign in to EnergyTrak elsewhere,
+in case that invalidates the token Home Assistant holds — you do not have to
+wait for polling to start failing, and you do not have to delete and re-add
+the integration (which would lose your entity ids, history and automations).
+
+Home Assistant also prompts for a new link on its own if the stored token is
+ever rejected. That path reuses the email already on the entry; Reconfigure is
+the one that can change it. Signing in as a *different* EnergyTrak account is
+refused, since it would silently repoint your existing entities at someone
+else's generator — add a second integration entry for that instead.
+
 The setup flow then lists the sites your account can see. If the list is empty
 (some accounts cannot enumerate the site collection), enter site IDs manually
 as a comma-separated list.

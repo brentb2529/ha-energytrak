@@ -181,6 +181,56 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Replace the stored credentials on demand.
+
+        Re-authentication only fires *after* EnergyTrak rejects the stored
+        refresh token, which leaves a gap: signing in again in the phone app
+        can invalidate Home Assistant's token, and until the next poll fails
+        there is no way to hand over a fresh link. This is the deliberate
+        entry point — it also allows changing the account email, which reauth
+        cannot, since reauth reuses the email already on the entry.
+        """
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            email = user_input[CONF_EMAIL].strip()
+            client = EnergyTrakClient(async_get_clientsession(self.hass), email)
+            try:
+                await client.async_sign_in_with_magic_link(user_input[CONF_MAGIC_LINK])
+            except EnergyTrakAuthError as err:
+                errors["base"] = _auth_error_key(err)
+            except EnergyTrakConnectionError:
+                errors["base"] = "cannot_connect"
+            except EnergyTrakError:
+                _LOGGER.exception("Unexpected error during EnergyTrak reconfigure")
+                errors["base"] = "unknown"
+            else:
+                # Signing in as a different account would silently point the
+                # existing entities at someone else's generator, so the
+                # account must match. A new entry is the way to add another.
+                await self.async_set_unique_id(client.user_id or client.email)
+                self._abort_if_unique_id_mismatch(reason="account_mismatch")
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates={
+                        CONF_EMAIL: email,
+                        CONF_API_KEY: client.api_key,
+                        CONF_REFRESH_TOKEN: client.refresh_token,
+                    },
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_SCHEMA, {CONF_EMAIL: entry.data.get(CONF_EMAIL)}
+            ),
+            errors=errors,
+        )
+
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:

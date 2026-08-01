@@ -3,19 +3,19 @@
     "step": {
       "user": {
         "title": "Connect to EnergyTrak",
-        "description": "Request a sign-in link from the EnergyTrak app or website, then paste the full link from that email below. The link is single-use \u2014 do not open it in a browser first.",
+        "description": "Request a sign-in link from the EnergyTrak app or website, then paste the full link from that email below. The link is single-use — do not open it in a browser first.",
         "data": {
           "email": "Email address",
           "magic_link": "Sign-in link"
         },
         "data_description": {
           "email": "The address the EnergyTrak sign-in link was sent to.",
-          "magic_link": "Copy the link target from the email (right-click the sign-in button \u2192 Copy link address)."
+          "magic_link": "Copy the link target from the email (right-click the sign-in button → Copy link address)."
         }
       },
       "sites": {
         "title": "Choose generators",
-        "description": "Select the EnergyTrak sites to add. If none are listed, your account cannot browse the site list \u2014 enter the site IDs manually instead.",
+        "description": "Select the EnergyTrak sites to add. If none are listed, your account cannot browse the site list — enter the site IDs manually instead.",
         "data": {
           "site_ids": "Sites",
           "manual_site_ids": "Additional site IDs"
@@ -30,12 +30,24 @@
         "data": {
           "magic_link": "Sign-in link"
         }
+      },
+      "reconfigure": {
+        "title": "Update EnergyTrak sign-in",
+        "description": "Replace the stored credentials for {email}. Request a fresh sign-in link from the EnergyTrak app or website and paste it below. Do this whenever you sign in elsewhere, since a new sign-in can invalidate the token Home Assistant is using. The link is single-use — do not open it in a browser first.",
+        "data": {
+          "email": "Email address",
+          "magic_link": "Sign-in link"
+        },
+        "data_description": {
+          "email": "Must be the same EnergyTrak account; to add a different account, add another integration entry.",
+          "magic_link": "Copy the link target from the email (right-click the sign-in button → Copy link address)."
+        }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to EnergyTrak.",
       "invalid_auth": "EnergyTrak rejected the sign-in.",
-      "invalid_magic_link": "That does not look like a sign-in link \u2014 it must contain apiKey and oobCode parameters.",
+      "invalid_magic_link": "That does not look like a sign-in link — it must contain apiKey and oobCode parameters.",
       "expired_link": "That sign-in link has expired or was already used. Request a new one.",
       "email_mismatch": "The link does not match that email address.",
       "no_sites_selected": "Select at least one site, or enter a site ID manually.",
@@ -43,7 +55,9 @@
     },
     "abort": {
       "already_configured": "This EnergyTrak account is already set up.",
-      "reauth_successful": "EnergyTrak reconnected successfully."
+      "reauth_successful": "EnergyTrak reconnected successfully.",
+      "reconfigure_successful": "EnergyTrak credentials updated.",
+      "account_mismatch": "That sign-in link belongs to a different EnergyTrak account. Use the original account, or add a new integration entry for the other one."
     }
   },
   "options": {
