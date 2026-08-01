@@ -90,6 +90,16 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         suggested_display_precision=1,
         value_fn=_key("engine_hours"),
+        # Which field this came from, and whether it survives the "a unit
+        # cannot have run longer than it has existed" check. Sources differ
+        # in unit between firmwares, so provenance is the difference between
+        # a real counter and a misread one.
+        attributes_fn=lambda data: {
+            "source_field": data.get("engine_hours_source"),
+            "exceeds_time_since_commissioning": data.get(
+                "engine_hours_implausible"
+            ),
+        },
     ),
     EnergyTrakSensorDescription(
         key="status",

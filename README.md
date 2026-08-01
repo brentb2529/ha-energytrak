@@ -227,6 +227,30 @@ Trusting the second one blindly paints false zeros. The integration instead:
   and `Equipment data age` tells you how old the number is.
 - **Counters and engine hours**: always reported. They stay meaningful at any age.
 
+Note that "the unit is off, so 0 is correct" only applies to fields the
+controller actually sends. Some units transmit no equipment block at all, and
+returning 0 for each missing field there would invent a dozen measurements —
+which would then become a dozen entities, since entities are created for any
+field with a value. An absent reading stays absent.
+
+### Engine hours and units
+
+Engine hours comes from the first of four candidate fields that carries a
+value, and **they are not all in the same unit despite the naming**.
+`EquipmentEventData.EngineHours` is hours; `DeviceEventData.EngineHoursTP` is
+minutes — it read `1623` on a generator commissioned five days earlier, where
+1,623 hours is impossible by a factor of thirteen and 1,623 minutes (27.05 h)
+is not. The conversion is attached to the field, never inferred from the size
+of the number: a generator retrofitted with a monitor legitimately carries
+hours that dwarf its EnergyTrak commissioning date.
+
+The `Engine hours` sensor exposes `source_field` so you can see which one won,
+and `exceeds_time_since_commissioning`, which flags a reading larger than the
+unit's own age. That flag informs rather than corrects — retrofits trip it
+honestly — but on a new install it is the signature of a source whose unit is
+being read wrong. `Download diagnostics` includes `counter_sources`, listing
+every candidate's raw value side by side.
+
 ### The controller's timestamp can lie
 
 `EquipmentEventData` carries its own upload timestamp, and on at least one

@@ -581,6 +581,72 @@ check("a fresh vendor timestamp is believed without corroboration",
 check("basis is the report itself", healthy["equipment_freshness_basis"], "reported")
 check("and readings are not suppressed", healthy["engine_speed"], 0)
 
+print("controller that sends DeviceEventData instead of EquipmentEventData")
+# A second real unit, five days after commissioning. It sends no
+# EquipmentEventData block at all — every field sourced only from there is
+# absent — and reports runtime as DeviceEventData.EngineHoursTP, in MINUTES
+# despite the name.
+def device_event_doc(ts, **kv):
+    return {
+        "name": "projects/x/databases/(default)/documents/device/dev1",
+        "updateTime": "2026-07-29T11:59:30.123456Z",
+        "fields": {"details": m({
+            "state": m({"generatorRunning": b(False), "state": s("fault")}),
+            "rawState": m({"Event": m({
+                "MessageEventData": m({"ActualDateUTC": s(ts)}),
+                "DeviceEventData": m(kv),
+            })}),
+        })},
+    }
+
+
+def site_commissioned(when):
+    return {"fields": {"commissionedAt": s(when)}}
+
+
+fresh = (NOW - timedelta(minutes=17)).strftime("%Y-%m-%dT%H:%M:%S")
+r = N.normalize_site(
+    "s", None,
+    [device_event_doc(fresh, EngineHoursTP=s("1623"), BatteryVoltageTP=s("13.528"))],
+    stale_threshold_seconds=900, now=NOW,
+    site_doc=site_commissioned("2026-07-24T16:18:27"),
+)
+# 1623 read as hours on a five-day-old generator is impossible by 13x.
+check("EngineHoursTP is converted from minutes", r["engine_hours"], 27.05)
+check("the source field is named", r["engine_hours_source"],
+      "Event.DeviceEventData.EngineHoursTP")
+check("27.05 h fits a 5-day-old unit", r["engine_hours_implausible"], False)
+
+# The whole point: no EquipmentEventData means no output measurements. The
+# off-means-zero shortcut must not manufacture them — every one of these
+# would otherwise become an entity holding a confident, invented 0.
+for f in ("output_voltage", "engine_speed", "load_power", "load_l1_current",
+          "power_factor", "load_reactive_power", "generator_frequency",
+          "load_apparent_power"):
+    check(f"absent field {f} is not invented as 0", r[f], None)
+
+# ...while a field that IS present still gets the shortcut.
+present = N.normalize_site(
+    "s", None,
+    [device_doc(clean={"generatorRunning": b(False)},
+                raw=plain_equip(fresh, EngineSpeed=s("0")))],
+    stale_threshold_seconds=900, now=NOW)
+check("a reported field still reads 0 when the unit is off",
+      present["engine_speed"], 0)
+
+# The guard that would have caught the minutes bug before a user did.
+unscaled = N.normalize_site(
+    "s", None,
+    [device_doc(clean={"engineRuntimeHours": s("1623")},
+                raw=plain_equip(fresh))],
+    stale_threshold_seconds=900, now=NOW,
+    site_doc=site_commissioned("2026-07-24T16:18:27"))
+check("hours exceeding the unit's own age are flagged",
+      unscaled["engine_hours_implausible"], True)
+# A retrofit legitimately carries hours predating its commissioning, so the
+# flag informs rather than corrects — the value is untouched.
+check("...but never silently rewritten", unscaled["engine_hours"], 1623)
+
 print()
 print(f"{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
 sys.exit(1 if FAILURES else 0)

@@ -262,15 +262,25 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # Normalisation
 # ----------------------------------------------------------------------
 
-# Engine hours, in priority order. Different firmware populates different
-# ones, so the first with a non-zero value wins. Kept as a constant so the
-# reading and its provenance cannot drift apart.
-_ENGINE_HOUR_PATHS = [
-    "engineRuntimeHours",
-    "Event.EquipmentEventData.EngineHours",
-    "Event.DeviceEventData.EngineHoursTP",
-    "Equipment.EngineHours",
+# Engine hours, in priority order, each with the factor that converts it to
+# hours. Different firmware populates different ones and they are NOT all in
+# the same unit despite the naming: `EquipmentEventData.EngineHours` is hours
+# (observed as 90.47 on a real unit), while `DeviceEventData.EngineHoursTP`
+# is minutes — it read 1623 on a generator commissioned five days earlier,
+# where 1623 hours is impossible by a factor of thirteen and 1623 minutes
+# (27.05 h) is not.
+#
+# The unit is attached to the field rather than inferred from the value.
+# Guessing "this number looks too big, divide it" would corrupt the perfectly
+# legitimate case of an older generator retrofitted with a monitor, whose
+# hours vastly exceed its EnergyTrak commissioning date.
+_ENGINE_HOUR_SOURCES: list[tuple[str, float]] = [
+    ("engineRuntimeHours", 1.0),
+    ("Event.EquipmentEventData.EngineHours", 1.0),
+    ("Event.DeviceEventData.EngineHoursTP", 1.0 / 60.0),
+    ("Equipment.EngineHours", 1.0),
 ]
+_ENGINE_HOUR_PATHS = [path for path, _ in _ENGINE_HOUR_SOURCES]
 _STARTS_PATHS = ["Event.EquipmentEventData.StartsCount"]
 _TRIPS_PATHS = ["Event.EquipmentEventData.TripsCount"]
 
@@ -472,9 +482,19 @@ def normalize_site(
         runs. Synthesising a confident `0 rpm` from a nine-month-old snapshot
         presents an *absence of data* as a measurement. Past the bound, report
         nothing so the gap is visible.
+
+        The shortcut also requires the field to *exist* in the payload. Some
+        controllers send no ``EquipmentEventData`` block at all: on one real
+        unit every output field was absent, and returning 0 for each of them
+        invented sixteen measurements — which then became sixteen entities,
+        because entity creation keys off having a non-None value. A confident
+        ``0 W`` for a quantity the generator has never reported is worse than
+        the gap it papers over.
         """
+        reported = _find(sources, paths)
         if (
             generator_running is False
+            and reported is not None
             and equipment_age is not None
             and equipment_age <= _OFF_MEANS_ZERO_MAX_AGE_SECONDS
         ):
@@ -499,12 +519,39 @@ def normalize_site(
     # sometimes carries a literal 0, which would otherwise shadow the real
     # counter from the equipment event, so skip zeros unless every source
     # agrees (a genuinely brand-new install).
-    hour_candidates = [
-        _to_number(_find(sources, [path])) for path in _ENGINE_HOUR_PATHS
-    ]
-    engine_hours = next((v for v in hour_candidates if v not in (None, 0)), None)
-    if engine_hours is None and any(v == 0 for v in hour_candidates):
+    engine_hours: float | int | None = None
+    engine_hours_source: str | None = None
+    saw_zero = False
+    for path, to_hours in _ENGINE_HOUR_SOURCES:
+        candidate = _to_number(_find(sources, [path]))
+        if candidate is None:
+            continue
+        if candidate == 0:
+            saw_zero = True
+            continue
+        scaled = candidate * to_hours
+        engine_hours = round(scaled, 2) if to_hours != 1.0 else candidate
+        engine_hours_source = path
+        break
+    if engine_hours is None and saw_zero:
         engine_hours = 0
+
+    # A unit cannot have run for longer than it has existed. This does not
+    # correct the value — a generator retrofitted with a monitor legitimately
+    # carries hours predating its EnergyTrak commissioning — but a reading
+    # that fails it is the signature of a source whose unit we have guessed
+    # wrong, which is exactly how the minutes-vs-hours bug reached users. It
+    # is surfaced rather than silently patched.
+    site_fields = _site_fields(site_doc)
+    commissioned_at = site_fields.get("commissioned_at")
+    hours_since_commissioning: float | None = None
+    if isinstance(commissioned_at, datetime):
+        hours_since_commissioning = (now - commissioned_at).total_seconds() / 3600
+    engine_hours_implausible = (
+        engine_hours is not None
+        and hours_since_commissioning is not None
+        and engine_hours > hours_since_commissioning
+    )
 
     # --- Alarms ------------------------------------------------------
     # Two possible sources. Older payloads nest ~25 individual flags under
@@ -665,6 +712,8 @@ def normalize_site(
         "starts_count": _to_number(_find(sources, _STARTS_PATHS)),
         "trips_count": _to_number(_find(sources, _TRIPS_PATHS)),
         # Provenance for the cumulative counters — diagnostics only, no entity.
+        "engine_hours_source": engine_hours_source,
+        "engine_hours_implausible": engine_hours_implausible,
         "counter_sources": {
             "engine_hours": _candidates(labelled_sources, _ENGINE_HOUR_PATHS),
             "starts_count": _candidates(labelled_sources, _STARTS_PATHS),
@@ -709,7 +758,7 @@ def normalize_site(
         "equipment_source": snapshot.device_id,
         "device_ids": [v.device_id for v in views],
         # Site-level exercise history and faults.
-        **_site_fields(site_doc),
+        **site_fields,
         "smart_mode_enabled": _find([clean_state], ["smartModeEnabled"]),
         "smart_mode_detection": _find([clean_state], ["smartModeDetection"]),
         "status_color": _find([clean_state], ["generatorStatusColor"]),
