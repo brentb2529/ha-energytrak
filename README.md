@@ -250,13 +250,23 @@ field with a value. An absent reading stays absent.
 ### Engine hours and units
 
 Engine hours comes from the first of four candidate fields that carries a
-value, and **they are not all in the same unit despite the naming**.
-`EquipmentEventData.EngineHours` is hours; `DeviceEventData.EngineHoursTP` is
-minutes — it read `1623` on a generator commissioned five days earlier, where
-1,623 hours is impossible by a factor of thirteen and 1,623 minutes (27.05 h)
-is not. The conversion is attached to the field, never inferred from the size
-of the number: a generator retrofitted with a monitor legitimately carries
-hours that dwarf its EnergyTrak commissioning date.
+value, and **they are not all in the same unit despite the naming**:
+
+| Field | Unit |
+| --- | --- |
+| `EquipmentEventData.EngineHours` | hours |
+| `cleanState.engineRuntimeHours` | minutes |
+| `DeviceEventData.EngineHoursTP` | minutes |
+
+The last two are the *same counter under two names* — a unit reporting both
+carried the identical raw value in each — so they share one conversion
+constant and cannot drift apart. That counter read `1623` on a generator
+commissioned five days earlier, where 1,623 hours is impossible by a factor of
+thirteen and 1,623 minutes (27.05 h) is correct.
+
+The conversion is attached to the field, never inferred from the size of the
+number: a generator retrofitted with a monitor legitimately carries hours that
+dwarf its EnergyTrak commissioning date.
 
 Nothing in the payload observed so far declares its own units, so the field
 name is the only signal — which is exactly why the mistake was possible. Two

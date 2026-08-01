@@ -281,10 +281,22 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # Guessing "this number looks too big, divide it" would corrupt the perfectly
 # legitimate case of an older generator retrofitted with a monitor, whose
 # hours vastly exceed its EnergyTrak commissioning date.
+#
+# `engineRuntimeHours` and `EngineHoursTP` are the SAME counter under two
+# names — a unit reporting both carried the identical raw value in each — so
+# they must share a factor. Whatever else changes here, changing one of
+# those two without the other reintroduces a phantom 60x disagreement
+# between two copies of one number.
+# The shared runtime counter is in MINUTES, confirmed against a real unit's
+# actual runtime. Its name says hours and it is not: a generator commissioned
+# five days earlier reported 1623, which is impossible as hours by a factor of
+# thirteen and correct as minutes (27.05 h).
+_RUNTIME_COUNTER_TO_HOURS = 1.0 / 60.0
+
 _ENGINE_HOUR_SOURCES: list[tuple[str, float]] = [
-    ("engineRuntimeHours", 1.0),
+    ("engineRuntimeHours", _RUNTIME_COUNTER_TO_HOURS),
     ("Event.EquipmentEventData.EngineHours", 1.0),
-    ("Event.DeviceEventData.EngineHoursTP", 1.0 / 60.0),
+    ("Event.DeviceEventData.EngineHoursTP", _RUNTIME_COUNTER_TO_HOURS),
     ("Equipment.EngineHours", 1.0),
 ]
 _ENGINE_HOUR_PATHS = [path for path, _ in _ENGINE_HOUR_SOURCES]

@@ -634,18 +634,20 @@ present = N.normalize_site(
 check("a reported field still reads 0 when the unit is off",
       present["engine_speed"], 0)
 
-# The guard that would have caught the minutes bug before a user did.
+# The guard that would have caught the units bug before a user did: a value
+# that stays impossible even after conversion.
 unscaled = N.normalize_site(
     "s", None,
-    [device_doc(clean={"engineRuntimeHours": s("1623")},
+    [device_doc(clean={"engineRuntimeHours": s("600000")},
                 raw=plain_equip(fresh))],
     stale_threshold_seconds=900, now=NOW,
     site_doc=site_commissioned("2026-07-24T16:18:27"))
 check("hours exceeding the unit's own age are flagged",
       unscaled["engine_hours_implausible"], True)
 # A retrofit legitimately carries hours predating its commissioning, so the
-# flag informs rather than corrects — the value is untouched.
-check("...but never silently rewritten", unscaled["engine_hours"], 1623)
+# flag informs rather than corrects — the converted value is passed through
+# rather than second-guessed.
+check("...but never silently rewritten", unscaled["engine_hours"], 10000.0)
 
 print("disagreeing message timestamps: newest wins")
 # Straight from a real payload. ActualDateUTC and Created both sat at the
@@ -682,40 +684,44 @@ print("runtime sources cross-check each other")
 # ratio names the mistake: ~60 is minutes read as hours, ~3600 is seconds.
 # This needs no knowledge of what the vendor's app displays; the payload
 # checks itself.
-def two_source_doc(runtime_hours, tp_minutes):
+# engineRuntimeHours and EngineHoursTP proved to be the SAME counter under two
+# names — one real unit carried the identical raw value in both — so they share
+# a factor and can never disagree. The meaningful pairing is that shared
+# counter against EquipmentEventData.EngineHours, which is in true hours.
+def two_source_doc(runtime_counter, equipment_hours):
     return {
         "name": "projects/x/databases/(default)/documents/device/dev1",
         "updateTime": "2026-07-29T11:59:30.123456Z",
         "fields": {"details": m({
             "state": m({"generatorRunning": b(False),
-                        "engineRuntimeHours": s(runtime_hours)}),
+                        "engineRuntimeHours": s(runtime_counter)}),
             "rawState": m({"Event": m({
                 "MessageEventData": m({"ActualDateUTC": s(fresh)}),
-                "DeviceEventData": m({"EngineHoursTP": s(tp_minutes)}),
+                "EquipmentEventData": m({"EngineHours": s(equipment_hours)}),
             })}),
         })},
     }
 
 
-# Correct factor: 27.05 h and 1623 min are the same reading. No complaint.
-agree = N.normalize_site("s", None, [two_source_doc("27.05", "1623")],
+# Factor correct: 1623 counts and 27.05 hours are the same reading.
+agree = N.normalize_site("s", None, [two_source_doc("1623", "27.05")],
                          stale_threshold_seconds=900, now=NOW)
 check("consistent sources raise nothing", agree["engine_hours_disagreement_ratio"], None)
 
-# Wrong factor: if EngineHoursTP were read as hours it would be 60x the other.
-disagree = N.normalize_site("s", None, [two_source_doc("27.05", "97380")],
+# Factor wrong by 60: the counter would resolve to 60x the equipment hours.
+disagree = N.normalize_site("s", None, [two_source_doc("1623", "0.45")],
                             stale_threshold_seconds=900, now=NOW)
-check("a 60x mismatch is detected", disagree["engine_hours_disagreement_ratio"], 60.0)
+check("a 60x mismatch is detected", disagree["engine_hours_disagreement_ratio"], 60.11)
 
 # Snapshots are taken at different moments, so small skew is normal and must
 # not cry wolf on every poll.
-skew = N.normalize_site("s", None, [two_source_doc("27.05", "1621")],
+skew = N.normalize_site("s", None, [two_source_doc("1623", "27.0")],
                         stale_threshold_seconds=900, now=NOW)
 check("ordinary skew between snapshots is tolerated",
       skew["engine_hours_disagreement_ratio"], None)
 
 check("raw telemetry blocks are captured for diagnostics",
-      sorted(disagree["raw_event_blocks"]), ["DeviceEventData", "MessageEventData"])
+      sorted(disagree["raw_event_blocks"]), ["EquipmentEventData", "MessageEventData"])
 
 print()
 print(f"{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
