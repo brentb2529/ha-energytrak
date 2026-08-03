@@ -210,6 +210,12 @@
       },
       "next_exercise": {
         "name": "Next exercise due"
+      },
+      "site_health": {
+        "name": "Site health"
+      },
+      "site_state": {
+        "name": "Site state"
       }
     },
     "binary_sensor": {

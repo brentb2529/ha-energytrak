@@ -391,6 +391,24 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_key("health"),
     ),
+    # Site-level grade and state, which EnergyTrak keeps separately from the
+    # generator's own. They are not duplicates: the site document can report
+    # a fault the controller heartbeat does not (a subscription lapse, an
+    # outage-manager malfunction), and it is the level the vendor's own app
+    # grades on. Both were normalised from the start but had no entity, so
+    # anything downstream — dashboards, alert rules — could not see them.
+    EnergyTrakSensorDescription(
+        key="site_health",
+        translation_key="site_health",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("site_health"),
+    ),
+    EnergyTrakSensorDescription(
+        key="site_state",
+        translation_key="site_state",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("site_state"),
+    ),
     EnergyTrakSensorDescription(
         key="utility_monitor",
         translation_key="utility_monitor",
