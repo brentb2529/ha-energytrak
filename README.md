@@ -210,6 +210,36 @@ If RPM and output voltage sit at zero but Last exercise is recent, the
 generator is fine — it is the vendor's equipment telemetry that has stopped,
 not the unit.
 
+### Do not schedule against Next exercise due
+
+**`Next exercise due` and `Exercise interval` are vendor predictions, and on a
+real unit they are wrong by a day.** `Last exercise` is an observation and is
+reliable; these two are not, so do not build automations, alert rules or
+notification mute windows on them.
+
+Two consecutive runs on one generator:
+
+| | |
+| --- | --- |
+| Ran | `2026-07-25T15:22:10Z` — Saturday |
+| Ran | `2026-08-01T15:22:21Z` — Saturday, **7 days + 11s later** |
+| `nextExerciseDue` said | `2026-08-02` — Sunday |
+| `intervalDays` said | `8` |
+
+The unit exercises weekly on a Saturday. The vendor's own fields describe a
+different schedule, one day later and drifting through the week — the July 25
+prediction of August 2nd was already contradicted by the August 1st run before
+the next prediction was even issued.
+
+The likely reading is that `nextExerciseDue` is a *deadline* ("must exercise
+by") rather than a schedule, and `intervalDays` is its window rather than the
+cadence. Either way it does not tell you when the generator will run.
+
+To predict the next run, take `Last exercise` and add the interval you observe
+from consecutive values of it. To detect a run that has just finished, watch
+`Last exercise` change, or watch the `Running` binary sensor go on and back
+off — both are observations rather than forecasts.
+
 ## About staleness
 
 EnergyTrak feeds two independent pipelines into the same document:

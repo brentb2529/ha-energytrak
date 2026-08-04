@@ -197,6 +197,13 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         icon="mdi:timer-outline",
         value_fn=_key("last_exercise_duration_seconds"),
     ),
+    # Vendor PREDICTION, not an observation, and wrong by a day on a real
+    # unit: a generator that ran two consecutive Saturdays 7 days apart was
+    # told nextExerciseDue was the Sunday, with intervalDays=8. Reads more
+    # like a "must exercise by" deadline than a schedule. Anything that needs
+    # to know when the unit will actually run should derive it from
+    # last_exercise instead. See README, "Do not schedule against Next
+    # exercise due".
     EnergyTrakSensorDescription(
         key="next_exercise",
         translation_key="next_exercise",
@@ -204,7 +211,14 @@ SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         icon="mdi:calendar-clock",
         value_fn=_timestamp("next_exercise_due"),
         attributes_fn=lambda data: {
-            "interval_days": data.get("exercise_interval_days")
+            "interval_days": data.get("exercise_interval_days"),
+            # Surfaced on the entity itself so the caveat travels with the
+            # value, not only in the README.
+            "is_vendor_prediction": True,
+            "reliability": (
+                "Vendor forecast, observed to be a day late; derive the real "
+                "schedule from last_exercise instead."
+            ),
         },
     ),
     # ---- Counters ---------------------------------------------------
