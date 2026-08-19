@@ -430,6 +430,21 @@ def normalize_site(
         ("device", parsed_device),
     ]
 
+    # Every device's state, for provenance listings only. The value lookups
+    # above deliberately consult a narrower set — a dormant device can carry a
+    # months-old equipment block whose stale counters must not shadow live
+    # ones or trip the disagreement check — but *seeing* what every document
+    # holds is how field-semantics questions get settled from a diagnostics
+    # download alone.
+    all_labelled_sources: list[tuple[str, Any]] = []
+    _label_counts: dict[str, int] = {}
+    for v in views:
+        n = _label_counts.get(v.kind, 0)
+        _label_counts[v.kind] = n + 1
+        label = v.kind if n == 0 else f"{v.kind}{n + 1}"
+        all_labelled_sources.append((f"cleanState({label})", v.clean))
+        all_labelled_sources.append((f"rawState({label})", v.raw))
+
     # --- Equipment-snapshot age -------------------------------------
     # The controller's own timestamp is a *lower* bound on freshness, not the
     # truth — see EquipmentFreshness. Having watched the block's contents
@@ -808,10 +823,27 @@ def normalize_site(
             for name in ("EquipmentEventData", "DeviceEventData", "MessageEventData")
             if isinstance(block := _find([raw_state], [f"Event.{name}"]), dict)
         },
+        # The same blocks from EVERY linked device, not just the freshest —
+        # a dormant device's old equipment block is invisible everywhere else,
+        # and its presence (or firm absence) is exactly what unit-semantics
+        # questions turn on.
+        "device_raw_event_blocks": {
+            label: blocks
+            for label, root in all_labelled_sources
+            if label.startswith("rawState")
+            and (blocks := {
+                name: block
+                for name in (
+                    "EquipmentEventData", "DeviceEventData", "MessageEventData"
+                )
+                if isinstance(block := _find([root], [f"Event.{name}"]), dict)
+                and block
+            })
+        },
         "counter_sources": {
-            "engine_hours": _candidates(labelled_sources, _ENGINE_HOUR_PATHS),
-            "starts_count": _candidates(labelled_sources, _STARTS_PATHS),
-            "trips_count": _candidates(labelled_sources, _TRIPS_PATHS),
+            "engine_hours": _candidates(all_labelled_sources, _ENGINE_HOUR_PATHS),
+            "starts_count": _candidates(all_labelled_sources, _STARTS_PATHS),
+            "trips_count": _candidates(all_labelled_sources, _TRIPS_PATHS),
         },
         # Status / metadata
         "fuel_type": _find(

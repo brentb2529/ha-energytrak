@@ -369,7 +369,7 @@ check("ancient snapshot: no invented zero", r["engine_speed"], None)
 # counter that looks wrong on hardware we cannot see is unfalsifiable.
 prov = r["counter_sources"]["engine_hours"]
 check("cleanState's zero is recorded, not silently dropped",
-      prov.get("cleanState:engineRuntimeHours"), "0")
+      prov.get("cleanState(generator):engineRuntimeHours"), "0")
 check("the winning field is named",
       prov.get("rawState(monitor):Event.EquipmentEventData.EngineHours"), "90.47")
 check("provenance labels the source by role, not by serial",
