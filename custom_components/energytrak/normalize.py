@@ -273,9 +273,7 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # hours. Different firmware populates different ones and they are NOT all in
 # the same unit despite the naming: `EquipmentEventData.EngineHours` is hours
 # (observed as 90.47 on a real unit), while `DeviceEventData.EngineHoursTP`
-# is minutes — it read 1623 on a generator commissioned five days earlier,
-# where 1623 hours is impossible by a factor of thirteen and 1623 minutes
-# (27.05 h) is not.
+# is tenths of an hour — the classic integer decihour engine-meter format.
 #
 # The unit is attached to the field rather than inferred from the value.
 # Guessing "this number looks too big, divide it" would corrupt the perfectly
@@ -285,13 +283,16 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # `engineRuntimeHours` and `EngineHoursTP` are the SAME counter under two
 # names — a unit reporting both carried the identical raw value in each — so
 # they must share a factor. Whatever else changes here, changing one of
-# those two without the other reintroduces a phantom 60x disagreement
-# between two copies of one number.
-# The shared runtime counter is in MINUTES, confirmed against a real unit's
-# actual runtime. Its name says hours and it is not: a generator commissioned
-# five days earlier reported 1623, which is impossible as hours by a factor of
-# thirteen and correct as minutes (27.05 h).
-_RUNTIME_COUNTER_TO_HOURS = 1.0 / 60.0
+# those two without the other reintroduces a phantom disagreement between
+# two copies of one number.
+# The shared runtime counter is in TENTHS OF AN HOUR, calibrated against a
+# real unit whose physical meter read ~160 h while the counter read 1623
+# (162.3 h). The counter was previously misread as minutes (27.05 h): the
+# unit's five-day-old EnergyTrak commissioning made 1623 hours impossible by
+# 13x, and minutes looked plausible — but the generator was a retrofit, so
+# its runtime legitimately predates commissioning, and decihours is what the
+# vendor's own display agrees with.
+_RUNTIME_COUNTER_TO_HOURS = 0.1
 
 _ENGINE_HOUR_SOURCES: list[tuple[str, float]] = [
     ("engineRuntimeHours", _RUNTIME_COUNTER_TO_HOURS),
@@ -560,8 +561,9 @@ def normalize_site(
     # Self-calibration. When a controller populates more than one runtime
     # field, the candidates measure the same quantity and must agree once
     # converted — so any disagreement means a conversion factor above is
-    # wrong for this firmware. A ratio near 60 is the signature of a
-    # minutes/hours mix-up, near 3600 of seconds/hours.
+    # wrong for this firmware. A ratio near 6 is the signature of a
+    # decihours/minutes mix-up, near 10 of decihours/hours, near 60 of
+    # minutes/hours, near 3600 of seconds/hours.
     #
     # This needs no knowledge of what the vendor's own app displays: the
     # payload cross-checks itself. It only works on units that report two

@@ -285,14 +285,18 @@ value, and **they are not all in the same unit despite the naming**:
 | Field | Unit |
 | --- | --- |
 | `EquipmentEventData.EngineHours` | hours |
-| `cleanState.engineRuntimeHours` | minutes |
-| `DeviceEventData.EngineHoursTP` | minutes |
+| `cleanState.engineRuntimeHours` | tenths of an hour |
+| `DeviceEventData.EngineHoursTP` | tenths of an hour |
 
 The last two are the *same counter under two names* — a unit reporting both
 carried the identical raw value in each — so they share one conversion
-constant and cannot drift apart. That counter read `1623` on a generator
-commissioned five days earlier, where 1,623 hours is impossible by a factor of
-thirteen and 1,623 minutes (27.05 h) is correct.
+constant and cannot drift apart. That counter is an integer count of **tenths
+of an hour** (the classic engine-meter decihour format), calibrated against a
+real unit whose physical meter read ~160 h while the counter read `1623`
+(162.3 h). It was previously misread as minutes: the unit's five-day-old
+EnergyTrak commissioning made 1,623 hours impossible and 27.05 h plausible —
+but the generator was a retrofit whose runtime legitimately predates its
+commissioning, and the vendor's own display settles it as decihours.
 
 The conversion is attached to the field, never inferred from the size of the
 number: a generator retrofitted with a monitor legitimately carries hours that
@@ -306,7 +310,8 @@ the vendor's app displays:
 - **Sources cross-check each other.** When a controller populates more than
   one runtime field, they measure the same quantity and must agree once
   converted. A disagreement means a factor is wrong for that firmware, and the
-  ratio names the mistake — near 60 is minutes read as hours, near 3600 is
+  ratio names the mistake — near 6 is decihours read as minutes, near 10 is
+  decihours read as hours, near 60 is minutes read as hours, near 3600 is
   seconds. This is logged as a warning, not buried in diagnostics, since
   nobody pulls diagnostics for a number that merely looks a bit off. Ordinary
   skew between snapshots taken moments apart is tolerated.
