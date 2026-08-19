@@ -285,20 +285,25 @@ value, and **they are not all in the same unit despite the naming**:
 | Field | Unit |
 | --- | --- |
 | `EquipmentEventData.EngineHours` | hours |
-| `cleanState.engineRuntimeHours` | 108-second counts (0.03 h each) |
-| `DeviceEventData.EngineHoursTP` | 108-second counts (0.03 h each) |
+| `cleanState.engineRuntimeHours` | ~111-second counts (163/5283 h each) |
+| `DeviceEventData.EngineHoursTP` | ~111-second counts (163/5283 h each) |
 
 The last two are the *same counter under two names* — a unit reporting both
 carried the identical raw value in each — so they share one conversion
 constant and cannot drift apart. That counter is in **no standard time unit**:
-it ticks once per ~108 seconds of runtime (0.03 h per count), plausibly once
-per firmware telemetry cycle. This was calibrated against a real unit whose
-physical hour meter read ~160 h while the counter read `5283` (× 0.03 =
-158.5 h). The same pairing refutes both earlier guesses — as minutes the
-counter would display 88.05 h, as tenths of an hour 528.3 h. It is a
-single-point calibration; a second simultaneous (counter, meter) pair from
-any unit would confirm or correct it, and the cross-checks below flag
-firmware where the factor is wrong.
+it ticks once per ~111 seconds of runtime, evidently once per firmware
+telemetry cycle. The factor (163/5283 ≈ 0.030854 h per count) is calibrated
+against a real unit whose physical hour meter read 163 h while the counter
+read `5283`. The same pairing refutes the simpler guesses — as minutes the
+counter would display 88.05 h, as tenths of an hour 528.3 h.
+
+There is no vendor conversion to copy: the EnergyTrak Pro web app
+(energytrak.io) was traced reading this same field and formatting it as
+literal decimal hours with no factor at all, so on firmware that writes the
+raw counter into it the vendor's own UI misrenders it too. The physical hour
+meter is the only ground truth. This is a single-pair calibration; a second
+simultaneous (counter, meter) pair refines the factor via the delta between
+pairs, and the cross-checks below flag firmware where it is wrong.
 
 The conversion is attached to the field, never inferred from the size of the
 number: a generator retrofitted with a monitor legitimately carries hours that
@@ -312,8 +317,8 @@ the vendor's app displays:
 - **Sources cross-check each other.** When a controller populates more than
   one runtime field, they measure the same quantity and must agree once
   converted. A disagreement means a factor is wrong for that firmware, and the
-  ratio names the mistake — near 1.8 is the 108-second counter read as
-  minutes, near 3.3 is it read as tenths of an hour, near 33 as hours, near
+  ratio names the mistake — near 1.9 is the 111-second counter read as
+  minutes, near 3.2 is it read as tenths of an hour, near 32 as hours, near
   3600 is seconds. This is logged as a warning, not buried in diagnostics,
   since
   nobody pulls diagnostics for a number that merely looks a bit off. Ordinary

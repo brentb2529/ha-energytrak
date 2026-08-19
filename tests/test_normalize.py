@@ -611,14 +611,14 @@ r = N.normalize_site(
     stale_threshold_seconds=900, now=NOW,
     site_doc=site_commissioned("2026-07-24T16:18:27"),
 )
-# The counter ticks once per 108 s of runtime (0.03 h/count), calibrated on
-# the real unit whose meter read ~160 h while the counter read 5283. The same
-# unit read 1623 three weeks earlier: 48.69 h.
-check("EngineHoursTP is converted at 0.03 h per count",
-      r["engine_hours"], 48.69)
+# The counter ticks once per ~111 s of runtime (163 h / 5283 counts),
+# calibrated on the real unit whose physical meter read 163 h while the
+# counter read 5283. The same unit read 1623 three weeks earlier: 50.08 h.
+check("EngineHoursTP is converted at 163/5283 h per count",
+      r["engine_hours"], 50.08)
 check("the source field is named", r["engine_hours_source"],
       "Event.DeviceEventData.EngineHoursTP")
-check("48.69 h fits a unit commissioned five days prior",
+check("50.08 h fits a unit commissioned five days prior",
       r["engine_hours_implausible"], False)
 
 # The whole point: no EquipmentEventData means no output measurements. The
@@ -651,7 +651,7 @@ check("hours exceeding the unit's own age are flagged",
 # A retrofit legitimately carries hours predating its commissioning, so the
 # flag informs rather than corrects — the converted value is passed through
 # rather than second-guessed.
-check("...but never silently rewritten", unscaled["engine_hours"], 18000.0)
+check("...but never silently rewritten", unscaled["engine_hours"], 18512.21)
 
 print("disagreeing message timestamps: newest wins")
 # Straight from a real payload. ActualDateUTC and Created both sat at the
@@ -685,8 +685,8 @@ check("readings are published rather than suppressed", r["engine_speed"], 0)
 print("runtime sources cross-check each other")
 # Two runtime fields measuring the same quantity must agree once converted.
 # When they do not, a conversion factor is wrong for that firmware — and the
-# ratio names the mistake: ~1.8 is the 108-second counter read as minutes,
-# ~3.3 is it read as tenths of an hour, ~33 as hours, ~3600 is seconds.
+# ratio names the mistake: ~1.9 is the 111-second counter read as minutes,
+# ~3.2 is it read as tenths of an hour, ~32 as hours, ~3600 is seconds.
 # This needs no knowledge of what the vendor's app displays; the payload
 # checks itself.
 # engineRuntimeHours and EngineHoursTP proved to be the SAME counter under two
@@ -708,20 +708,20 @@ def two_source_doc(runtime_counter, equipment_hours):
     }
 
 
-# Factor correct: 1623 counts (108 s each) and 48.69 hours are the same reading.
-agree = N.normalize_site("s", None, [two_source_doc("1623", "48.69")],
+# Factor correct: 1623 counts (~111 s each) and 50.08 hours are the same reading.
+agree = N.normalize_site("s", None, [two_source_doc("1623", "50.08")],
                          stale_threshold_seconds=900, now=NOW)
 check("consistent sources raise nothing", agree["engine_hours_disagreement_ratio"], None)
 
-# Factor wrong by 1.8: the 108-second counter read as minutes resolves to
-# 5/9 of the true hours — exactly the bug this integration shipped with.
+# Factor wrong by ~1.85: the 111-second counter read as minutes resolves to
+# just over half the true hours — exactly the bug this integration shipped with.
 disagree = N.normalize_site("s", None, [two_source_doc("1623", "27.05")],
                             stale_threshold_seconds=900, now=NOW)
-check("a 1.8x mismatch is detected", disagree["engine_hours_disagreement_ratio"], 1.8)
+check("a 1.85x mismatch is detected", disagree["engine_hours_disagreement_ratio"], 1.85)
 
 # Snapshots are taken at different moments, so small skew is normal and must
 # not cry wolf on every poll.
-skew = N.normalize_site("s", None, [two_source_doc("1623", "48.5")],
+skew = N.normalize_site("s", None, [two_source_doc("1623", "50.0")],
                         stale_threshold_seconds=900, now=NOW)
 check("ordinary skew between snapshots is tolerated",
       skew["engine_hours_disagreement_ratio"], None)

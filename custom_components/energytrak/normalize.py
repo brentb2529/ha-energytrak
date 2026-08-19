@@ -286,18 +286,23 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # those two without the other reintroduces a phantom disagreement between
 # two copies of one number.
 #
-# Calibration history for the shared counter, all from one real unit
-# (B&S 50BSPP-0, genmon firmware 86q):
+# There is no vendor conversion to copy. The EnergyTrak Pro web app
+# (energytrak.io, traced in its compiled Flutter bundle) reads this same
+# `cleanState.engineRuntimeHours` field and formats it as literal decimal
+# hours — no factor at all — so on firmware that writes the raw counter into
+# it (genmon 86q observed), the vendor's own UI misrenders it too. The
+# generator's physical hour meter is the only ground truth available.
+#
+# Calibration, all from one real unit (B&S 50BSPP-0, genmon firmware 86q):
 #   2026-07-29  counter  1623
-#   2026-08-19  counter  5283   physical hour meter read ~160 h
-# 5283 counts against ~160 h gives 0.0303 h/count; we adopt 0.03 — 108 s per
-# count, plausibly one increment per firmware telemetry cycle rather than per
-# minute. Both earlier guesses are refuted by that same pairing: minutes
-# would display 88.05 h and tenths of an hour 528.3 h against a meter that
-# reads ~160 h. This is a single-point calibration; a second simultaneous
-# (counter, meter) pair from any unit would confirm or correct it, and the
-# cross-check below will flag firmware where it is wrong.
-_RUNTIME_COUNTER_TO_HOURS = 0.03
+#   2026-08-19  counter  5283   physical hour meter read 163 h
+# 163 h / 5283 counts = 111.07 s per count — evidently one increment per
+# firmware telemetry cycle (~111 s on this unit) rather than any standard
+# time unit. Minutes would display 88.05 h and tenths of an hour 528.3 h
+# against that meter. Single-pair calibration: a second simultaneous
+# (counter, meter) pair refines the factor via the delta between pairs, and
+# the cross-check below flags firmware where it is wrong.
+_RUNTIME_COUNTER_TO_HOURS = 163.0 / 5283.0  # 0.030854 h/count, 111.07 s
 
 _ENGINE_HOUR_SOURCES: list[tuple[str, float]] = [
     ("engineRuntimeHours", _RUNTIME_COUNTER_TO_HOURS),
@@ -566,9 +571,9 @@ def normalize_site(
     # Self-calibration. When a controller populates more than one runtime
     # field, the candidates measure the same quantity and must agree once
     # converted — so any disagreement means a conversion factor above is
-    # wrong for this firmware. A ratio near 1.8 is the signature of the
-    # 108-second counter read as minutes, near 3.3 of it read as tenths of
-    # an hour, near 33 of it read as hours, near 3600 of seconds/hours.
+    # wrong for this firmware. A ratio near 1.9 is the signature of the
+    # 111-second counter read as minutes, near 3.2 of it read as tenths of
+    # an hour, near 32 of it read as hours, near 3600 of seconds/hours.
     #
     # This needs no knowledge of what the vendor's own app displays: the
     # payload cross-checks itself. It only works on units that report two
