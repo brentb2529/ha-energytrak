@@ -272,8 +272,8 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # Engine hours, in priority order, each with the factor that converts it to
 # hours. Different firmware populates different ones and they are NOT all in
 # the same unit despite the naming: `EquipmentEventData.EngineHours` is hours
-# (observed as 90.47 on a real unit), while `DeviceEventData.EngineHoursTP`
-# is tenths of an hour — the classic integer decihour engine-meter format.
+# (observed as 90.47 on a real unit), while the shared runtime counter below
+# is in NO standard time unit at all.
 #
 # The unit is attached to the field rather than inferred from the value.
 # Guessing "this number looks too big, divide it" would corrupt the perfectly
@@ -285,14 +285,19 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # they must share a factor. Whatever else changes here, changing one of
 # those two without the other reintroduces a phantom disagreement between
 # two copies of one number.
-# The shared runtime counter is in TENTHS OF AN HOUR, calibrated against a
-# real unit whose physical meter read ~160 h while the counter read 1623
-# (162.3 h). The counter was previously misread as minutes (27.05 h): the
-# unit's five-day-old EnergyTrak commissioning made 1623 hours impossible by
-# 13x, and minutes looked plausible — but the generator was a retrofit, so
-# its runtime legitimately predates commissioning, and decihours is what the
-# vendor's own display agrees with.
-_RUNTIME_COUNTER_TO_HOURS = 0.1
+#
+# Calibration history for the shared counter, all from one real unit
+# (B&S 50BSPP-0, genmon firmware 86q):
+#   2026-07-29  counter  1623
+#   2026-08-19  counter  5283   physical hour meter read ~160 h
+# 5283 counts against ~160 h gives 0.0303 h/count; we adopt 0.03 — 108 s per
+# count, plausibly one increment per firmware telemetry cycle rather than per
+# minute. Both earlier guesses are refuted by that same pairing: minutes
+# would display 88.05 h and tenths of an hour 528.3 h against a meter that
+# reads ~160 h. This is a single-point calibration; a second simultaneous
+# (counter, meter) pair from any unit would confirm or correct it, and the
+# cross-check below will flag firmware where it is wrong.
+_RUNTIME_COUNTER_TO_HOURS = 0.03
 
 _ENGINE_HOUR_SOURCES: list[tuple[str, float]] = [
     ("engineRuntimeHours", _RUNTIME_COUNTER_TO_HOURS),
@@ -561,9 +566,9 @@ def normalize_site(
     # Self-calibration. When a controller populates more than one runtime
     # field, the candidates measure the same quantity and must agree once
     # converted — so any disagreement means a conversion factor above is
-    # wrong for this firmware. A ratio near 6 is the signature of a
-    # decihours/minutes mix-up, near 10 of decihours/hours, near 60 of
-    # minutes/hours, near 3600 of seconds/hours.
+    # wrong for this firmware. A ratio near 1.8 is the signature of the
+    # 108-second counter read as minutes, near 3.3 of it read as tenths of
+    # an hour, near 33 of it read as hours, near 3600 of seconds/hours.
     #
     # This needs no knowledge of what the vendor's own app displays: the
     # payload cross-checks itself. It only works on units that report two

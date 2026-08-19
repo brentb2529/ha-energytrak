@@ -239,10 +239,10 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             self._warned_hour_sources.add(site_id)
             _LOGGER.warning(
                 "Engine-hour sources disagree by %sx for site %s (%s). One of these "
-                "fields is not in the unit this integration assumes; a ratio near 6 "
-                "means tenths of an hour read as minutes, near 10 means tenths read "
-                "as hours, near 60 means minutes, near 3600 means seconds. Please "
-                "report this with your diagnostics: %s",
+                "fields is not in the unit this integration assumes; a ratio near "
+                "1.8 means the 108-second runtime counter was read as minutes, near "
+                "3.3 as tenths of an hour, near 33 as hours, near 3600 means "
+                "seconds. Please report this with your diagnostics: %s",
                 ratio,
                 site_id,
                 data.get("engine_hours_source"),

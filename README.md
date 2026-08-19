@@ -285,18 +285,20 @@ value, and **they are not all in the same unit despite the naming**:
 | Field | Unit |
 | --- | --- |
 | `EquipmentEventData.EngineHours` | hours |
-| `cleanState.engineRuntimeHours` | tenths of an hour |
-| `DeviceEventData.EngineHoursTP` | tenths of an hour |
+| `cleanState.engineRuntimeHours` | 108-second counts (0.03 h each) |
+| `DeviceEventData.EngineHoursTP` | 108-second counts (0.03 h each) |
 
 The last two are the *same counter under two names* — a unit reporting both
 carried the identical raw value in each — so they share one conversion
-constant and cannot drift apart. That counter is an integer count of **tenths
-of an hour** (the classic engine-meter decihour format), calibrated against a
-real unit whose physical meter read ~160 h while the counter read `1623`
-(162.3 h). It was previously misread as minutes: the unit's five-day-old
-EnergyTrak commissioning made 1,623 hours impossible and 27.05 h plausible —
-but the generator was a retrofit whose runtime legitimately predates its
-commissioning, and the vendor's own display settles it as decihours.
+constant and cannot drift apart. That counter is in **no standard time unit**:
+it ticks once per ~108 seconds of runtime (0.03 h per count), plausibly once
+per firmware telemetry cycle. This was calibrated against a real unit whose
+physical hour meter read ~160 h while the counter read `5283` (× 0.03 =
+158.5 h). The same pairing refutes both earlier guesses — as minutes the
+counter would display 88.05 h, as tenths of an hour 528.3 h. It is a
+single-point calibration; a second simultaneous (counter, meter) pair from
+any unit would confirm or correct it, and the cross-checks below flag
+firmware where the factor is wrong.
 
 The conversion is attached to the field, never inferred from the size of the
 number: a generator retrofitted with a monitor legitimately carries hours that
@@ -310,9 +312,10 @@ the vendor's app displays:
 - **Sources cross-check each other.** When a controller populates more than
   one runtime field, they measure the same quantity and must agree once
   converted. A disagreement means a factor is wrong for that firmware, and the
-  ratio names the mistake — near 6 is decihours read as minutes, near 10 is
-  decihours read as hours, near 60 is minutes read as hours, near 3600 is
-  seconds. This is logged as a warning, not buried in diagnostics, since
+  ratio names the mistake — near 1.8 is the 108-second counter read as
+  minutes, near 3.3 is it read as tenths of an hour, near 33 as hours, near
+  3600 is seconds. This is logged as a warning, not buried in diagnostics,
+  since
   nobody pulls diagnostics for a number that merely looks a bit off. Ordinary
   skew between snapshots taken moments apart is tolerated.
 - **The commissioning-age guard** covers the single-source case, where there
