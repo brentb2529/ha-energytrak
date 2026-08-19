@@ -284,9 +284,15 @@ value, and **they are not all in the same unit despite the naming**:
 
 | Field | Unit |
 | --- | --- |
-| `EquipmentEventData.EngineHours` | hours |
+| `EquipmentEventData.EngineHours` | LCD clock, dot for colon ("91.48" = 91:48 = 91.8 h) |
 | `cleanState.engineRuntimeHours` | ~111-second counts (163/5283 h each) |
 | `DeviceEventData.EngineHoursTP` | ~111-second counts (163/5283 h each) |
+
+`EngineHours` is the controller's LCD display serialized with a dot in place
+of the colon: a real unit's LCD read **91:48** (91 h 48 min) while this field
+carried the string `"91.48"` at the same moment. The fractional digits are
+minutes, so the integration converts them (91.8 h), falling back to plain
+decimal only for fractions that cannot be minutes.
 
 The last two are the *same counter under two names* — a unit reporting both
 carried the identical raw value in each — so they share one conversion

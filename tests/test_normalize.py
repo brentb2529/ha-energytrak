@@ -117,7 +117,8 @@ r = N.normalize_site(
     now=NOW,
 )
 check("battery_voltage", r["battery_voltage"], 13.1)
-check("engine_hours skips the cleanState 0", r["engine_hours"], 412.5)
+# EngineHours is the LCD clock with a dot: 412.5 is 412:50, i.e. 412.83 h.
+check("engine_hours skips the cleanState 0", r["engine_hours"], 412.83)
 check("ancient snapshot: no invented zero", r["engine_speed"], None)
 check("ancient snapshot: no invented zero", r["output_voltage"], None)
 check("grid_voltage passes through stale", r["grid_voltage"], 243)
@@ -345,7 +346,8 @@ grid_doc = named_doc(
 
 r = N.normalize_site("genmon-x", None, [gen_doc, mon_doc, grid_doc],
                      stale_threshold_seconds=900, now=NOW)
-check("engine hours from the freshest snapshot", r["engine_hours"], 90.47)
+# "90.47" is the LCD reading 90:47 — 90 h 47 min — not 90.47 decimal hours.
+check("engine hours from the freshest snapshot", r["engine_hours"], 90.78)
 check("starts from the freshest snapshot", r["starts_count"], 274)
 check("snapshot sourced from the monitor", r["equipment_source"], "1234567890-genmon")
 check("all devices recorded", len(r["device_ids"]), 3)
@@ -681,6 +683,18 @@ check("telemetry is correctly seen as fresh", r["equipment_data_stale"], False)
 check("no corroboration needed when a timestamp is actually current",
       r["equipment_freshness_basis"], "reported")
 check("readings are published rather than suppressed", r["engine_speed"], 0)
+
+print("EngineHours is the LCD clock, dot for colon")
+# Ground truth from a real unit photographed at the same moment as its
+# telemetry: LCD read 91:48 while EquipmentEventData.EngineHours carried the
+# string "91.48". 48 is minutes, so the decimal value is 91.8 — reading it
+# as decimal hours understates by up to 0.59/0.99 of an hour.
+lcd = N.normalize_site(
+    "s", None,
+    [device_doc(clean={"generatorRunning": b(False)},
+                raw=plain_equip(fresh, EngineHours=s("91.48")))],
+    stale_threshold_seconds=900, now=NOW)
+check("91.48 reads as 91:48, i.e. 91.8 h", lcd["engine_hours"], 91.8)
 
 print("runtime sources cross-check each other")
 # Two runtime fields measuring the same quantity must agree once converted.

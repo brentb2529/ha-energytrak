@@ -269,11 +269,15 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # Normalisation
 # ----------------------------------------------------------------------
 
-# Engine hours, in priority order, each with the factor that converts it to
-# hours. Different firmware populates different ones and they are NOT all in
-# the same unit despite the naming: `EquipmentEventData.EngineHours` is hours
-# (observed as 90.47 on a real unit), while the shared runtime counter below
-# is in NO standard time unit at all.
+# Engine hours, in priority order, each with the conversion that turns it
+# into decimal hours. Different firmware populates different ones and they
+# are NOT all in the same unit despite the naming.
+#
+# `EquipmentEventData.EngineHours` is the controller's LCD clock display
+# serialized with a dot in place of the colon: a unit whose LCD read 91:48
+# (91 h 48 min) carried the string "91.48" in this field at the same moment.
+# So "91.48" means 91.8 decimal hours, not 91.48 — see _clock_hours below.
+# The earlier reading of "90.47" on the same fleet was 90:47 all along.
 #
 # The unit is attached to the field rather than inferred from the value.
 # Guessing "this number looks too big, divide it" would corrupt the perfectly
@@ -304,11 +308,33 @@ def _parse_timestamp(raw: Any) -> datetime | None:
 # the cross-check below flags firmware where it is wrong.
 _RUNTIME_COUNTER_TO_HOURS = 163.0 / 5283.0  # 0.030854 h/count, 111.07 s
 
-_ENGINE_HOUR_SOURCES: list[tuple[str, float]] = [
-    ("engineRuntimeHours", _RUNTIME_COUNTER_TO_HOURS),
-    ("Event.EquipmentEventData.EngineHours", 1.0),
-    ("Event.DeviceEventData.EngineHoursTP", _RUNTIME_COUNTER_TO_HOURS),
-    ("Equipment.EngineHours", 1.0),
+
+def _counter_hours(value: float) -> float:
+    """Convert the shared telemetry-cycle runtime counter to decimal hours."""
+    return value * _RUNTIME_COUNTER_TO_HOURS
+
+
+def _clock_hours(value: float) -> float:
+    """Convert an LCD-style H.MM reading ("91.48" = 91:48) to decimal hours.
+
+    The fractional digits are minutes, not hundredths. A fractional part that
+    cannot be minutes (>= 60) falls back to reading the value as plain
+    decimal hours, in case some firmware genuinely writes decimals here —
+    that fallback is only reachable for .60–.99, so a wrong guess there costs
+    at most 0.4 h and only on firmware never observed so far.
+    """
+    whole = int(value)
+    minutes = round((value - whole) * 100)
+    if 0 <= minutes < 60:
+        return whole + minutes / 60
+    return value
+
+
+_ENGINE_HOUR_SOURCES: list[tuple[str, Any]] = [
+    ("engineRuntimeHours", _counter_hours),
+    ("Event.EquipmentEventData.EngineHours", _clock_hours),
+    ("Event.DeviceEventData.EngineHoursTP", _counter_hours),
+    ("Equipment.EngineHours", _clock_hours),
 ]
 _ENGINE_HOUR_PATHS = [path for path, _ in _ENGINE_HOUR_SOURCES]
 _STARTS_PATHS = ["Event.EquipmentEventData.StartsCount"]
@@ -561,8 +587,7 @@ def normalize_site(
         if candidate == 0:
             saw_zero = True
             continue
-        scaled = candidate * to_hours
-        engine_hours = round(scaled, 2) if to_hours != 1.0 else candidate
+        engine_hours = round(to_hours(candidate), 2)
         engine_hours_source = path
         break
     if engine_hours is None and saw_zero:
@@ -580,7 +605,7 @@ def normalize_site(
     # or more sources, which is why the commissioning-age guard exists as
     # well — that one covers the single-source case.
     candidates_in_hours = {
-        path: _to_number(_find(sources, [path])) * to_hours
+        path: to_hours(_to_number(_find(sources, [path])))
         for path, to_hours in _ENGINE_HOUR_SOURCES
         if _to_number(_find(sources, [path])) not in (None, 0)
     }
