@@ -23,16 +23,15 @@ Assistant — no extra hardware or bridge service.
 
 ## Installation (HACS)
 
-This is a **custom repository**. It will not appear in HACS search until you
-add it — HACS only searches repositories it already knows about, and inclusion
-in the default list is a separate submission to
-[hacs/default](https://github.com/hacs/default).
+This integration is in the [HACS](https://hacs.xyz) default store.
 
-1. HACS → ⋮ → **Custom repositories** → add
-   `https://github.com/brentb2529/ha-energytrak`, category **Integration**.
-2. It now appears in HACS search under **EnergyTrak** or **Briggs and
-   Stratton**. Install it, then restart Home Assistant.
+1. HACS → search for **EnergyTrak** (or **Briggs and Stratton**).
+2. Install it, then restart Home Assistant.
 3. **Settings → Devices & Services → Add Integration → EnergyTrak**.
+
+On HACS versions whose store index has not refreshed yet, it can also be
+added the old way: ⋮ → **Custom repositories** →
+`https://github.com/brentb2529/ha-energytrak`, category **Integration**.
 
 Manual install: copy `custom_components/energytrak` into your HA
 `config/custom_components/` directory and restart.
