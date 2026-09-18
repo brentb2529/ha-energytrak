@@ -76,6 +76,22 @@ TYPE_NAMES = {
 
 HA_EVENT = f"{DOMAIN}_backlog"
 
+# Fired ONCE at the end of a drain that recovered at least one alarm.
+#
+# The per-record HA_EVENT above is the raw feed, and it is the wrong thing to
+# notify on: a single outage can replay dozens of records, so an automation
+# bound to it would send dozens of pushes about one already-finished episode.
+#
+# This carries the digest instead -- what fired, when it started, whether it is
+# still asserted -- so one notification can describe the whole gap.
+#
+# WHY THIS EXISTS AT ALL. The bridge writes alarms to flash the instant they
+# happen, precisely so an outage cannot erase the evidence. That evidence was
+# then replayed into the recorder as statistics and nowhere else, and
+# statistics are not notifications: a fault that occurred AND cleared while
+# Home Assistant was down left perfect records that nobody was ever told about.
+HA_EVENT_SUMMARY = f"{DOMAIN}_backlog_replayed"
+
 # EXTERNAL statistics, not entity statistics.
 #
 # async_import_statistics attaches history to an existing entity, which is the
@@ -132,6 +148,9 @@ class BacklogDrain:
         # Alarms believed active, rebuilt as the log replays.
         self._active: set[int] = set()
         self._seen_any = False
+        # Alarm names recovered in THIS drain, in the order they fired, each
+        # with when it happened and whether it was still asserted at the end.
+        self._recovered: list[dict[str, Any]] = []
 
     async def async_drain(self) -> int:
         """Pull everything pending. Returns how many records were handled."""
@@ -140,6 +159,7 @@ class BacklogDrain:
 
         handled = 0
         buckets: dict[datetime, list[int]] = {}
+        self._recovered = []
 
         for _ in range(MAX_ROUNDS):
             raw = self.bridge.raw("backlog_batch")
@@ -164,6 +184,27 @@ class BacklogDrain:
             self._import_statistics(buckets)
         if handled:
             _LOGGER.info("Replayed %d record(s) from the bridge event log", handled)
+        if self._recovered:
+            # `still_active` is computed only now, after every record in the
+            # batch has been applied: an alarm that set and then cleared inside
+            # the same gap must not be reported as ongoing.
+            for item in self._recovered:
+                item["still_active"] = item["index"] in self._active
+            names = [r["alarm"] or f"alarm {r['index']}" for r in self._recovered]
+            _LOGGER.warning(
+                "Recovered %d alarm event(s) from the bridge that occurred while "
+                "Home Assistant was not listening: %s",
+                len(self._recovered), ", ".join(names),
+            )
+            self.hass.bus.async_fire(HA_EVENT_SUMMARY, {
+                "count": len(self._recovered),
+                "alarms": names,
+                "still_active": [r["alarm"] for r in self._recovered if r["still_active"]],
+                "first_timestamp": self._recovered[0]["timestamp"],
+                "last_timestamp": self._recovered[-1]["timestamp"],
+                "any_time_known": any(r["timestamp"] for r in self._recovered),
+                "events": self._recovered,
+            })
         return handled
 
     def _handle(self, rec: dict[str, int], buckets: dict[datetime, list[int]]) -> None:
@@ -193,6 +234,12 @@ class BacklogDrain:
         if typ == EVENT_ALARM_SET:
             self._active.add(idx)
             self._seen_any = True
+            self._recovered.append({
+                "index": idx,
+                "alarm": name,
+                "timestamp": when.isoformat() if when else None,
+                "still_active": False,   # resolved after the whole batch
+            })
         elif typ == EVENT_ALARM_CLEAR:
             self._active.discard(idx)
             self._seen_any = True
