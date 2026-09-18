@@ -110,6 +110,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnergyTrakConfigEntry) -
     coordinator = EnergyTrakCoordinator(hass, entry, client, local=local)
     await coordinator.async_config_entry_first_refresh()
 
+    # Attach AFTER the first refresh, so coordinator.data exists before any
+    # urgent change can arrive. Attaching earlier would simply drop the first
+    # one, which is the worst possible one to drop: the bridge replays its
+    # whole state on connect, and a generator already faulted when Home
+    # Assistant starts would go unannounced until the next poll.
+    coordinator.async_start_urgent_updates()
+    entry.async_on_unload(coordinator.async_stop_urgent_updates)
+
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
 

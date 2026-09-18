@@ -91,15 +91,23 @@
   "options": {
     "step": {
       "init": {
-        "title": "EnergyTrak options",
+        "title": "EnergyTrak settings",
+        "description": "Local bridge currently configured: {bridge}\n\nLeave the address blank to remove the bridge and fall back to cloud data. Leave the key blank to keep the stored one.",
         "data": {
-          "scan_interval": "Polling interval (seconds)",
-          "stale_minutes": "Equipment snapshot staleness threshold (minutes)"
+          "local_host": "B-Infohub bridge IP address",
+          "local_encryption_key": "Bridge API encryption key (blank = unchanged)",
+          "scan_interval": "Cloud poll interval (seconds)",
+          "stale_minutes": "Treat equipment data as stale after (minutes)"
         },
         "data_description": {
-          "stale_minutes": "Live readings (RPM, output voltage, load) are hidden when the last full equipment upload is older than this. Counters and engine hours are always shown."
+          "local_host": "Alarms, utility failures and engine starts are delivered the instant the bridge reports them and do not wait for this interval.",
+          "scan_interval": "How often EnergyTrak's cloud API is polled. Local bridge readings are pushed and are not affected."
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the bridge at that address.",
+      "invalid_key": "The bridge refused that API encryption key."
     }
   },
   "entity": {

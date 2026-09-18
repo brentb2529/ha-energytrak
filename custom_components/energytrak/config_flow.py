@@ -85,6 +85,51 @@ STEP_REAUTH_SCHEMA = vol.Schema(
 )
 
 
+
+
+def _account_name(entry: Any) -> str:
+    """The entry's account identity, with any previous bridge suffix removed.
+
+    Re-pointing a bridge must not produce "account + bridge (a) + bridge (b)".
+    """
+    title = entry.title or entry.data.get(CONF_EMAIL) or "EnergyTrak"
+    return title.split(" + bridge (")[0]
+
+
+async def _probe_bridge(host: str, port: int, key: str) -> tuple[bool, str]:
+    """Connect once to prove the address and key work.
+
+    Worth the round trip: a wrong encryption key otherwise produces an entry
+    that looks configured and silently never delivers a reading.
+
+    Module level rather than a config-flow method because the OPTIONS flow
+    needs exactly the same check when the address is edited. Two copies of a
+    validation rule is how the two paths end up disagreeing about what counts
+    as a working bridge.
+
+    Returns (True, mac) or (False, error_key).
+    """
+    from aioesphomeapi import APIClient
+
+    client = APIClient(host, port, password=None, noise_psk=key or None,
+                       client_info="ha-energytrak")
+    try:
+        await client.connect(login=True)
+        info = await client.device_info()
+    except Exception as err:  # noqa: BLE001 - surfaced as a form error
+        _LOGGER.debug("Bridge probe failed for %s: %s", host, err)
+        text = str(err).lower()
+        if "auth" in text or "psk" in text or "handshake" in text:
+            return False, "invalid_key"
+        return False, "cannot_connect"
+    finally:
+        try:
+            await client.disconnect()
+        except Exception:  # noqa: BLE001
+            pass
+    return True, (getattr(info, "mac_address", None) or host)
+
+
 class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the EnergyTrak config flow."""
 
@@ -147,7 +192,7 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
 
         errors: dict[str, str] = {}
         if user_input is not None:
-            ok, detail = await self._async_probe_bridge(
+            ok, detail = await _probe_bridge(
                 bridge[CONF_LOCAL_HOST], bridge[CONF_LOCAL_PORT],
                 user_input[CONF_LOCAL_KEY],
             )
@@ -315,7 +360,7 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             host = user_input[CONF_LOCAL_HOST].strip()
             port = int(user_input.get(CONF_LOCAL_PORT, DEFAULT_LOCAL_PORT))
-            ok, detail = await self._async_probe_bridge(
+            ok, detail = await _probe_bridge(
                 host, port, user_input[CONF_LOCAL_KEY]
             )
             if not ok:
@@ -344,7 +389,15 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
                     elif len(site_ids) == 1:
                         # Unambiguous, so do not make the user restate it.
                         data[CONF_LOCAL_SITE_ID] = site_ids[0]
-                    self.hass.config_entries.async_update_entry(entry, data=data)
+                    # Say so on the card. The entry keeps its account
+                    # identity -- that is still what it is -- but a bridge that
+                    # leaves no trace in Settings is one nobody can confirm,
+                    # edit or remove without deleting the whole entry.
+                    self.hass.config_entries.async_update_entry(
+                        entry,
+                        data=data,
+                        title=f"{_account_name(entry)} + bridge ({host})",
+                    )
                     await self.hass.config_entries.async_reload(entry.entry_id)
                     return self.async_abort(reason="bridge_added")
 
@@ -404,34 +457,6 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def _async_probe_bridge(
-        self, host: str, port: int, key: str
-    ) -> tuple[bool, str]:
-        """Connect once to prove the address and key work.
-
-        Worth the round trip: a wrong encryption key otherwise produces an
-        entry that looks configured and silently never delivers a reading.
-        Returns (True, mac) or (False, error_key).
-        """
-        from aioesphomeapi import APIClient
-
-        client = APIClient(host, port, password=None, noise_psk=key or None,
-                           client_info="ha-energytrak")
-        try:
-            await client.connect(login=True)
-            info = await client.device_info()
-        except Exception as err:  # noqa: BLE001 - surfaced as a form error
-            _LOGGER.debug("Bridge probe failed for %s: %s", host, err)
-            text = str(err).lower()
-            if "auth" in text or "psk" in text or "handshake" in text:
-                return False, "invalid_key"
-            return False, "cannot_connect"
-        finally:
-            try:
-                await client.disconnect()
-            except Exception:  # noqa: BLE001
-                pass
-        return True, (getattr(info, "mac_address", None) or host)
 
     async def async_step_sites(
         self, user_input: dict[str, Any] | None = None
@@ -600,18 +625,70 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class EnergyTrakOptionsFlow(OptionsFlow):
-    """Tune polling and staleness behaviour."""
+    """Tune polling and staleness, and see or change the local bridge.
+
+    THE BRIDGE USED TO BE INVISIBLE ONCE CONFIGURED.
+
+    Adding one updates the existing account entry in place, so the entry keeps
+    its cloud title and the card still reads "bbensten@icloud.com". Nothing in
+    Settings said a bridge was attached, what its address was, or offered any
+    way to change or remove it -- the only evidence was a diagnostic sensor
+    several clicks away, and a wrong or stale address could only be fixed by
+    deleting the entry and starting over.
+
+    The options flow is the natural home for that: it is reachable from the
+    entry's Configure button, and it already owns the entry's other settings.
+    """
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Show and save the options."""
+        errors: dict[str, str] = {}
+        data = self.config_entry.data
+        has_bridge = bool(data.get(CONF_LOCAL_HOST))
+
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            host = str(user_input.pop(CONF_LOCAL_HOST, "") or "").strip()
+            key = str(user_input.pop(CONF_LOCAL_KEY, "") or "").strip()
+
+            if host:
+                # Blank key on an existing bridge means "leave the key alone".
+                # The form cannot show the stored one back, so requiring it on
+                # every edit would mean re-typing a 44-character secret just to
+                # change a poll interval.
+                key = key or str(data.get(CONF_LOCAL_KEY) or "")
+                ok, detail = await _probe_bridge(host, DEFAULT_LOCAL_PORT, key)
+                if not ok:
+                    errors["base"] = detail
+                else:
+                    new_data = {**data, CONF_LOCAL_HOST: host, CONF_LOCAL_KEY: key}
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry, data=new_data
+                    )
+            elif has_bridge:
+                # Cleared on purpose: detach the bridge and fall back to cloud.
+                new_data = {
+                    k: v
+                    for k, v in data.items()
+                    if k not in (CONF_LOCAL_HOST, CONF_LOCAL_KEY, CONF_LOCAL_PORT)
+                }
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry, data=new_data
+                )
+
+            if not errors:
+                return self.async_create_entry(data=user_input)
 
         options = self.config_entry.options
         schema = vol.Schema(
             {
+                vol.Optional(
+                    CONF_LOCAL_HOST, default=data.get(CONF_LOCAL_HOST, "")
+                ): TextSelector(),
+                vol.Optional(CONF_LOCAL_KEY, default=""): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
                 vol.Required(
                     CONF_SCAN_INTERVAL,
                     default=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
@@ -630,7 +707,14 @@ class EnergyTrakOptionsFlow(OptionsFlow):
                 ),
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={
+                "bridge": data.get(CONF_LOCAL_HOST) or "none",
+            },
+        )
 
 
 def _auth_error_key(err: EnergyTrakAuthError) -> str:

@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -90,6 +90,8 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         # is almost all of them.
         self.local = local
         self._local_was_active: bool | None = None
+        # Unsubscribes the urgent-change hook. See async_start_urgent_updates.
+        self._unsub_urgent: Any = None
         # Replays the bridge's flash event log. Built lazily on first use so a
         # cloud-only entry never imports the recorder statistics API.
         self._drain: Any = None
@@ -356,6 +358,55 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             payload["local_bus_age_seconds"] = None
 
         self._stamp_bridge(payload)
+
+    @callback
+    def async_start_urgent_updates(self) -> None:
+        """Publish immediately when the bridge reports something urgent.
+
+        WHY THIS IS NOT JUST A SHORTER scan_interval.
+
+        The bridge already delivers a utility failure or a start within
+        milliseconds -- subscribe_states is push. Everything after that was
+        Home Assistant's own doing: the value landed in LocalBridge._values
+        and waited for the next scheduled refresh. On the default 30s interval
+        that is up to 30 seconds of invented delay on the outage the whole
+        system exists to notice, and it looks exactly like the monitoring
+        failed.
+
+        Dropping scan_interval instead would poll EnergyTrak's API 30x harder
+        for the same benefit, and still leave a worst case of one interval.
+        This removes the wait entirely for the readings that matter and leaves
+        every other reading on its existing cadence.
+
+        async_set_updated_data, not async_request_refresh: the local snapshot
+        is already current, so there is nothing to fetch. Going out to the
+        cloud here would put a network round trip -- and its retries and
+        timeouts -- directly in the path of an alarm.
+        """
+        if self.local is None:
+            return
+        self._unsub_urgent = self.local.async_add_urgent_listener(
+            self._async_publish_urgent
+        )
+
+    @callback
+    def _async_publish_urgent(self) -> None:
+        """Re-overlay the bridge onto the last payload and publish at once."""
+        if self.data is None:
+            # Nothing has been fetched yet; the first regular refresh is
+            # imminent and will carry these values anyway.
+            return
+        results = {site: dict(payload) for site, payload in self.data.items()}
+        self._apply_local(results)
+        _LOGGER.debug("Urgent bridge change; publishing without waiting for poll")
+        self.async_set_updated_data(results)
+
+    @callback
+    def async_stop_urgent_updates(self) -> None:
+        """Detach the urgent hook on unload."""
+        if self._unsub_urgent is not None:
+            self._unsub_urgent()
+            self._unsub_urgent = None
 
     def _stamp_bridge(self, payload: dict[str, Any]) -> None:
         """Record WHICH bridge this entry watches, in every code path.

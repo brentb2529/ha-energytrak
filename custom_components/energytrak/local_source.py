@@ -55,6 +55,7 @@ import pathlib
 from typing import Any, Callable
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_call_later
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -126,6 +127,44 @@ def _to_cloud_vocabulary(key: str, value: Any) -> Any:
     return table.get(value.strip().lower(), value)
 
 
+# Readings that must not wait for the coordinator's interval.
+#
+# The alarm bits come from the contract. These are the non-alarm state changes
+# that are just as time-critical, and they are listed rather than inferred
+# because "is this urgent" is a judgement about consequences, not a property of
+# the register:
+#
+#   utility_power_failure  the outage itself -- the event the whole system
+#                          exists to notice, and the one a 30s delay makes
+#                          look like the monitoring failed
+#   engine_state           starting / running / stopped transitions
+#   engine_running
+#   engine_starting        the earliest evidence of a start attempt, and the
+#                          leading edge of a failed one
+#   switch_status          somebody moved AUTO/MANUAL/OFF at the panel; in OFF
+#                          the generator will not answer an outage at all
+#   common_shutdown        the machine has tripped
+#
+# Everything else -- voltages, currents, temperatures, hour meters -- rides the
+# normal interval. Those change on every poll of an 87-register bus, so waking
+# the coordinator for each would be a refresh storm that buys nothing: nobody
+# needs battery voltage 20 seconds sooner.
+_URGENT_EXTRA: frozenset[str] = frozenset({
+    "utility_power_failure",
+    "engine_state",
+    "engine_running",
+    "engine_starting",
+    "switch_status",
+    "common_shutdown",
+})
+
+# A start asserts several bits within a few hundred milliseconds. Firing per
+# bit would rebuild and publish the payload half a dozen times for one event.
+# This is short enough to stay immediate in human terms and long enough to
+# collapse a burst into one update.
+_URGENT_COALESCE_SECONDS = 0.35
+
+
 class LocalBridgeUnavailable(Exception):
     """Raised when the bridge cannot be reached or does not look like ours."""
 
@@ -134,9 +173,19 @@ class LocalBridge:
     """A live subscription to one B-Infohub bridge.
 
     Values are pushed, not polled: ``subscribe_states`` fires on change, so the
-    cached snapshot is always current and ``snapshot()`` costs nothing. The
-    coordinator's own interval then governs how often Home Assistant is told,
-    which keeps the cloud and local paths on the same cadence.
+    cached snapshot is always current and ``snapshot()`` costs nothing.
+
+    For most readings the coordinator's interval then governs how often Home
+    Assistant is told, which keeps the cloud and local paths on one cadence.
+    Battery voltage arriving 20 seconds late costs nothing.
+
+    URGENT READINGS DO NOT WAIT FOR THAT INTERVAL. A utility failure, a start,
+    or a shutdown alarm reaches this object within milliseconds and then used
+    to sit in _values until the next poll -- up to a full scan_interval of
+    invented delay on the events that matter most, on a transport that had
+    already delivered them. Those fire async_add_urgent_listener immediately
+    instead, coalesced over a short window because a single start sets several
+    bits at once.
     """
 
     def __init__(
@@ -156,6 +205,12 @@ class LocalBridge:
         # raises on blocking file I/O there rather than just warning about it.
         # Deferred to async_start, which can use an executor.
         self._contract: dict[str, Any] | None = contract
+
+        # Fired the moment a significant reading CHANGES, rather than on the
+        # coordinator's interval. See _URGENT_EXTRA and _on_state.
+        self._urgent_listeners: list[Callable[[], None]] = []
+        self._urgent_oids: frozenset[str] = frozenset()
+        self._urgent_timer: Any = None
 
         # numeric API key -> object_id, learned from list_entities on connect
         self._keys: dict[int, str] = {}
@@ -189,6 +244,12 @@ class LocalBridge:
              for key, meta in self._contract["local_only_keys"].items()}
         )
         self._alarm_oids = list(self._contract["alarm_keys"])
+        # exercising / scheduled_exercise_in_progress are in alarm_keys but are
+        # run states, not faults. They still belong here: knowing a run is a
+        # scheduled exercise is what lets a consumer NOT treat it as an
+        # incident, and that distinction is only useful if it arrives with the
+        # start rather than 30 seconds after it.
+        self._urgent_oids = frozenset(self._alarm_oids) | _URGENT_EXTRA
 
     # ------------------------------------------------------------------ life
     async def async_start(self) -> None:
@@ -300,6 +361,49 @@ class LocalBridge:
 
     # ----------------------------------------------------------------- state
     @callback
+    def async_add_urgent_listener(
+        self, cb: Callable[[], None]
+    ) -> Callable[[], None]:
+        """Register a callback fired when an URGENT reading changes.
+
+        Separate from async_add_listener, which is about the connection going
+        up or down. This one is about the generator doing something.
+        """
+        self._urgent_listeners.append(cb)
+
+        def _remove() -> None:
+            if cb in self._urgent_listeners:
+                self._urgent_listeners.remove(cb)
+
+        return _remove
+
+    @callback
+    def _fire_urgent(self) -> None:
+        """Run the urgent callbacks once, after the coalesce window."""
+        self._urgent_timer = None
+        for cb in list(self._urgent_listeners):
+            try:
+                cb()
+            except Exception:  # noqa: BLE001
+                _LOGGER.exception("Urgent bridge listener failed")
+
+    @callback
+    def _schedule_urgent(self) -> None:
+        """Start (but do not restart) the coalesce window.
+
+        Deliberately NOT a debounce that pushes the deadline back on every
+        new bit. A cascade of alarms during a hard fault would keep resetting
+        it and delay the notification for exactly as long as the emergency
+        lasted. The first urgent change starts the clock and the clock does
+        not move; later bits inside the window ride along with it.
+        """
+        if self._urgent_timer is not None:
+            return
+        self._urgent_timer = async_call_later(
+            self.hass, _URGENT_COALESCE_SECONDS, lambda _now: self._fire_urgent()
+        )
+
+    @callback
     def _on_state(self, state: Any) -> None:
         oid = self._keys.get(getattr(state, "key", None))
         if oid is None:
@@ -307,9 +411,25 @@ class LocalBridge:
         # missing_state means the device has the entity but no reading yet --
         # an unpopulated register, not a zero.
         if getattr(state, "missing_state", False):
-            self._values.pop(oid, None)
+            if self._values.pop(oid, None) is not None and oid in self._urgent_oids:
+                self._schedule_urgent()
             return
-        self._values[oid] = getattr(state, "state", None)
+
+        value = getattr(state, "state", None)
+        had = oid in self._values
+        previous = self._values.get(oid)
+        self._values[oid] = value
+
+        # Only on an actual CHANGE. ESPHome republishes on every poll of the
+        # bus, so reacting to each message would wake the coordinator several
+        # times a second for readings that did not move.
+        #
+        # `had` matters: the first value for an alarm arrives during startup,
+        # when every bit goes from absent to False. That is not a transition
+        # to anything, and treating it as one is how the firmware's own event
+        # log once logged a storm of phantom alarms on connect.
+        if had and value != previous and oid in self._urgent_oids:
+            self._schedule_urgent()
 
     # -------------------------------------------------------------- snapshot
     @property
