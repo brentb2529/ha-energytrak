@@ -35,6 +35,11 @@ LOCAL_SITE_PREFIX: Final = "bridge"
 # cloud-only, bridge-only, or both -- all three are first-class.
 CONF_HAS_CLOUD: Final = "has_cloud"
 
+# Form-only, never persisted: which existing account entry a manually
+# added bridge should join, or STANDALONE for none.
+CONF_ATTACH_TO_ENTRY: Final = "attach_to_entry"
+STANDALONE: Final = "__standalone__"
+
 # The bridge advertises this in its mDNS TXT record. Discovery is filtered on
 # it so this integration only ever offers to adopt a B-Infohub, never somebody
 # else's ESPHome doorbell.

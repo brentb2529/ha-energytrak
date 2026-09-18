@@ -31,6 +31,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_ATTACH_TO_ENTRY,
     CONF_HAS_CLOUD,
     CONF_LOCAL_HOST,
     CONF_LOCAL_KEY,
@@ -56,6 +57,7 @@ from .const import (
     CONF_SITE_IDS,
     CONF_SITE_NAMES,
     CONF_STALE_MINUTES,
+    STANDALONE,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_STALE_MINUTES,
     DOMAIN,
@@ -280,8 +282,36 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
 
         Discovery normally finds it, but mDNS does not cross VLANs and plenty
         of sensible networks put a generator controller on its own segment.
+
+        THIS PATH MUST BE ABLE TO PRODUCE THE "BOTH" INSTALL, NOT JUST
+        "BRIDGE ONLY".
+
+        It previously always created a standalone entry, so a user with an
+        EnergyTrak account who added a bridge by hand ended up with two
+        unrelated entries and two device cards for one generator -- the cloud
+        one going stale beside the local one, with no fallback between them,
+        because falling back is something a single coordinator does across two
+        sources it owns.
+
+        Attaching was only ever reachable through zeroconf. That is precisely
+        backwards: mDNS does not cross subnets, so the networks where the
+        bridge cannot be discovered are exactly the networks where it must be
+        added by hand -- and those users were silently denied the one
+        configuration that has both redundancy and full resolution.
+
+        So: if an account entry exists, offer to attach to it. If the user
+        declines, or there is no account, the bridge stands alone as before.
         """
         errors: dict[str, str] = {}
+
+        # Cloud entries only. A bridge-only entry has no account to join, and
+        # attaching a second bridge to one would silently replace the first.
+        account_entries = [
+            e
+            for e in self._async_current_entries()
+            if e.data.get(CONF_EMAIL) and not e.data.get(CONF_LOCAL_HOST)
+        ]
+
         if user_input is not None:
             host = user_input[CONF_LOCAL_HOST].strip()
             port = int(user_input.get(CONF_LOCAL_PORT, DEFAULT_LOCAL_PORT))
@@ -291,6 +321,33 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
             if not ok:
                 errors["base"] = detail
             else:
+                attach_to = user_input.get(CONF_ATTACH_TO_ENTRY) or ""
+                entry = (
+                    self.hass.config_entries.async_get_entry(attach_to)
+                    if attach_to and attach_to != STANDALONE
+                    else None
+                )
+
+                if entry is not None:
+                    # "Both": one entry, one coordinator, one device card,
+                    # with the bridge authoritative and the cloud underneath.
+                    data = {
+                        **entry.data,
+                        CONF_LOCAL_HOST: host,
+                        CONF_LOCAL_PORT: port,
+                        CONF_LOCAL_KEY: user_input[CONF_LOCAL_KEY],
+                    }
+                    site_ids: list[str] = list(entry.data.get(CONF_SITE_IDS, []))
+                    chosen = user_input.get(CONF_LOCAL_SITE_ID)
+                    if chosen:
+                        data[CONF_LOCAL_SITE_ID] = chosen
+                    elif len(site_ids) == 1:
+                        # Unambiguous, so do not make the user restate it.
+                        data[CONF_LOCAL_SITE_ID] = site_ids[0]
+                    self.hass.config_entries.async_update_entry(entry, data=data)
+                    await self.hass.config_entries.async_reload(entry.entry_id)
+                    return self.async_abort(reason="bridge_added")
+
                 await self.async_set_unique_id(f"{LOCAL_SITE_PREFIX}:{detail}")
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
@@ -303,17 +360,47 @@ class EnergyTrakConfigFlow(ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        schema: dict[Any, Any] = {
+            vol.Required(CONF_LOCAL_HOST): TextSelector(),
+            vol.Optional(CONF_LOCAL_PORT, default=DEFAULT_LOCAL_PORT): int,
+            vol.Required(CONF_LOCAL_KEY): TextSelector(
+                TextSelectorConfig(type=TextSelectorType.PASSWORD)
+            ),
+        }
+
+        if account_entries:
+            options = [
+                SelectOptionDict(value=e.entry_id, label=f"Add to {e.title}")
+                for e in account_entries
+            ]
+            options.append(
+                SelectOptionDict(value=STANDALONE, label="Local bridge only")
+            )
+            # Defaulting to the account is the right bias: someone who has an
+            # account AND hardware almost always wants both, and standalone is
+            # the choice that quietly gives up the cloud fallback.
+            schema[
+                vol.Required(CONF_ATTACH_TO_ENTRY, default=account_entries[0].entry_id)
+            ] = SelectSelector(
+                SelectSelectorConfig(options=options, mode=SelectSelectorMode.LIST)
+            )
+
+            site_names: dict[str, str] = account_entries[0].data.get(CONF_SITE_NAMES, {})
+            site_ids = list(account_entries[0].data.get(CONF_SITE_IDS, []))
+            if len(site_ids) > 1:
+                schema[vol.Optional(CONF_LOCAL_SITE_ID)] = SelectSelector(
+                    SelectSelectorConfig(
+                        options=[
+                            SelectOptionDict(value=s, label=site_names.get(s, s))
+                            for s in site_ids
+                        ],
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                )
+
         return self.async_show_form(
             step_id="bridge_manual",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_LOCAL_HOST): TextSelector(),
-                    vol.Optional(CONF_LOCAL_PORT, default=DEFAULT_LOCAL_PORT): int,
-                    vol.Required(CONF_LOCAL_KEY): TextSelector(
-                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                    ),
-                }
-            ),
+            data_schema=vol.Schema(schema),
             errors=errors,
         )
 

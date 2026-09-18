@@ -112,7 +112,26 @@ out += [")", ""]
 (HERE / "scripts/local_strings.json").write_text(json.dumps(
     {k: {"name": v} for k, v in sorted(strings.items())}, indent=2) + "\n")
 
+# SHIP THE CONTRACT WE JUST GENERATED FROM, NOT A HAND-COPIED ONE.
+#
+# local_source.py reads this bundled copy at runtime -- alarm_keys drives
+# active_alarm_count, and derived[] drives grid_present and has_malfunction.
+# It used to be copied across by hand, and it drifted: the bundled copy kept
+# 43 alarm keys after the firmware filtered them to 34, so the nine that this
+# unit reports as permanently asserted (L3 phases on a split-phase machine,
+# fuel and oil sensors that read 0xFFFF "not present") were still being
+# counted. active_alarm_count sat at 8 forever, which pinned the `fault`
+# binary sensor ON, which would have made GeneratorFaultActive a permanent
+# page on a perfectly healthy generator.
+#
+# Copying it here means the entity list and the contract that interprets it
+# can never again be generated from different inputs.
+(HERE / "custom_components/energytrak/telemetry_contract.json").write_text(
+    json.dumps(C, indent=2) + "\n")
+
 print(f"contract schema {C['schema']} from {contract_path}")
 print(f"  {len(nums)} sensors, {len(bins)} binary sensors, {len(txts)} text (skipped)")
 print(f"  wrote custom_components/energytrak/local_entities.py")
 print(f"  wrote scripts/local_strings.json  ({len(strings)} translation names)")
+print(f"  wrote custom_components/energytrak/telemetry_contract.json"
+      f"  ({len(C['alarm_keys'])} alarm keys)")

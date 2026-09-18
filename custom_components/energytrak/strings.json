@@ -2,6 +2,14 @@
   "config": {
     "step": {
       "user": {
+        "title": "EnergyTrak",
+        "description": "Set up an EnergyTrak cloud account, a local B-Infohub RS-485 bridge, or both. You can add the other half later.",
+        "menu_options": {
+          "cloud": "EnergyTrak cloud account",
+          "bridge_manual": "Local B-Infohub bridge (enter address)"
+        }
+      },
+      "cloud": {
         "title": "Connect to EnergyTrak",
         "description": "Request a sign-in link from the EnergyTrak app or website, then paste the full link from that email below. The link is single-use — do not open it in a browser first.",
         "data": {
@@ -11,6 +19,23 @@
         "data_description": {
           "email": "The address the EnergyTrak sign-in link was sent to.",
           "magic_link": "Copy the link target from the email (right-click the sign-in button → Copy link address)."
+        }
+      },
+      "bridge": {
+        "title": "B-Infohub local bridge",
+        "description": "Found {name} at {host}.\n\nThis bridge reads the generator's RS-485 port directly, so it reports roughly twice as many values as the EnergyTrak cloud and updates every few seconds instead of every few hours. It will be used automatically whenever it is reachable AND its bus is healthy; EnergyTrak keeps polling underneath and takes over the moment it is not.\n\nEnter the bridge's API encryption key (api_encryption_key in its secrets.yaml).",
+        "data": {
+          "local_encryption_key": "API encryption key",
+          "local_site_id": "Which generator is it wired to?"
+        }
+      },
+      "bridge_manual": {
+        "title": "Local B-Infohub bridge",
+        "description": "Enter the bridge's address and its API encryption key (api_encryption_key in its secrets.yaml). Use this when mDNS discovery cannot reach it — for example when the generator is on its own VLAN.",
+        "data": {
+          "local_host": "Host or IP address",
+          "local_port": "Port",
+          "local_encryption_key": "API encryption key"
         }
       },
       "sites": {
@@ -51,13 +76,16 @@
       "expired_link": "That sign-in link has expired or was already used. Request a new one.",
       "email_mismatch": "The link does not match that email address.",
       "no_sites_selected": "Select at least one site, or enter a site ID manually.",
-      "unknown": "Unexpected error."
+      "unknown": "Unexpected error.",
+      "invalid_key": "The bridge refused that API encryption key."
     },
     "abort": {
       "already_configured": "This EnergyTrak account is already set up.",
       "reauth_successful": "EnergyTrak reconnected successfully.",
       "reconfigure_successful": "EnergyTrak credentials updated.",
-      "account_mismatch": "That sign-in link belongs to a different EnergyTrak account. Use the original account, or add a new integration entry for the other one."
+      "account_mismatch": "That sign-in link belongs to a different EnergyTrak account. Use the original account, or add a new integration entry for the other one.",
+      "bridge_added": "Bridge added. The generator now reads from local hardware, with the cloud as fallback.",
+      "not_b_infohub": "That device is not a B-Infohub bridge."
     }
   },
   "options": {

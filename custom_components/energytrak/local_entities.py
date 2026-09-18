@@ -531,19 +531,16 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="extended_over_load_trip",
         translation_key="extended_over_load_trip",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("extended_over_load_trip"),
     ),
     EnergyTrakBinarySensorDescription(
         key="fuel_cap_open_circuit",
         translation_key="fuel_cap_open_circuit",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("fuel_cap_open_circuit"),
     ),
     EnergyTrakBinarySensorDescription(
         key="fuel_theft",
         translation_key="fuel_theft",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("fuel_theft"),
     ),
     EnergyTrakBinarySensorDescription(
@@ -573,13 +570,11 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="gen_l3_phase_high_voltage",
         translation_key="gen_l3_phase_high_voltage",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("gen_l3_phase_high_voltage"),
     ),
     EnergyTrakBinarySensorDescription(
         key="gen_l3_phase_low_voltage",
         translation_key="gen_l3_phase_low_voltage",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("gen_l3_phase_low_voltage"),
     ),
     EnergyTrakBinarySensorDescription(
@@ -657,7 +652,6 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="low_fuel_level",
         translation_key="low_fuel_level",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("low_fuel_level"),
     ),
     EnergyTrakBinarySensorDescription(
@@ -692,13 +686,11 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="maintenance_required",
         translation_key="maintenance_required",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("maintenance_required"),
     ),
     EnergyTrakBinarySensorDescription(
         key="oil_pressure_open_circuit",
         translation_key="oil_pressure_open_circuit",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("oil_pressure_open_circuit"),
     ),
     EnergyTrakBinarySensorDescription(
@@ -727,7 +719,6 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="water_level_switch",
         translation_key="water_level_switch",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("water_level_switch"),
     ),
 )

@@ -855,15 +855,10 @@
     "engine_over_speed",
     "engine_under_speed",
     "exercising",
-    "extended_over_load_trip",
-    "fuel_cap_open_circuit",
-    "fuel_theft",
     "gen_l1_phase_high_voltage",
     "gen_l1_phase_low_voltage",
     "gen_l2_phase_high_voltage",
     "gen_l2_phase_low_voltage",
-    "gen_l3_phase_high_voltage",
-    "gen_l3_phase_low_voltage",
     "general_notification",
     "general_warning",
     "generator_failed_to_start",
@@ -876,17 +871,75 @@
     "high_voltage_warning_1__ph-ph_",
     "high_voltage_warning_2__ph-ph_",
     "high_voltage_warning__ph-ph_",
-    "low_fuel_level",
     "low_oil_pressure",
     "low_voltage_failure_1__ph-ph_",
     "low_voltage_failure_2__ph-ph_",
     "magnetic_pick_up_fault",
-    "maintenance_required",
-    "oil_pressure_open_circuit",
     "scheduled_exercise_in_progress",
     "temperature_circuit_open",
-    "unbalanced_load",
-    "water_level_switch"
+    "unbalanced_load"
+  ],
+  "snapshot_slots": [
+    {
+      "key": "battery_voltage",
+      "scale": 100,
+      "esphome_id": "battery_voltage"
+    },
+    {
+      "key": "engine_speed",
+      "scale": 1,
+      "esphome_id": "engine_speed"
+    },
+    {
+      "key": "output_voltage_l1n",
+      "scale": 10,
+      "esphome_id": "generator_l1_voltage"
+    },
+    {
+      "key": "load_l1_current",
+      "scale": 10,
+      "esphome_id": "generator_l1_current"
+    },
+    {
+      "key": "load_power",
+      "scale": 10,
+      "esphome_id": "total_power"
+    },
+    {
+      "key": "load_apparent_power",
+      "scale": 10,
+      "esphome_id": "total_apparent_power"
+    },
+    {
+      "key": "grid_voltage",
+      "scale": 10,
+      "esphome_id": "utility_l1_voltage"
+    },
+    {
+      "key": "generator_frequency",
+      "scale": 100,
+      "esphome_id": "generator_l1_frequency"
+    },
+    {
+      "key": "oil_pressure",
+      "scale": 100,
+      "esphome_id": "oil_pressure_bar"
+    },
+    {
+      "key": "coolant_temperature",
+      "scale": 10,
+      "esphome_id": "coolant_temperature"
+    },
+    {
+      "key": "fuel_level",
+      "scale": 10,
+      "esphome_id": "fuel_level"
+    },
+    {
+      "key": "percentage_load",
+      "scale": 10,
+      "esphome_id": "percentage_load"
+    }
   ],
   "liveness": {
     "mqtt_availability_topic_suffix": "status",
