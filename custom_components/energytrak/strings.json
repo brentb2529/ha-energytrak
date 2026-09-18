@@ -190,6 +190,9 @@
       "equipment_data_timestamp": {
         "name": "Equipment data timestamp"
       },
+      "esp_internal_temperature": {
+        "name": "ESP Internal Temperature"
+      },
       "fault_condition": {
         "name": "Fault condition"
       },
@@ -380,6 +383,9 @@
       "trips_count": {
         "name": "Trips"
       },
+      "uptime": {
+        "name": "Uptime"
+      },
       "utility_l1-l2_voltage": {
         "name": "Utility L1-L2 Voltage"
       },
@@ -415,6 +421,9 @@
       },
       "utility_power": {
         "name": "Utility power"
+      },
+      "wi-fi_signal": {
+        "name": "Wi-Fi Signal"
       }
     },
     "binary_sensor": {

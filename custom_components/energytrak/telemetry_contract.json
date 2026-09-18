@@ -338,6 +338,13 @@
       "name": "Battery Low Voltage",
       "kind": "bin"
     },
+    "uptime": {
+      "object_id": "uptime",
+      "esphome_id": "bridge_uptime",
+      "unit": "s",
+      "name": "Uptime",
+      "kind": "num"
+    },
     "bus_witness": {
       "object_id": "bus_witness",
       "esphome_id": "bus_witness",
@@ -435,6 +442,13 @@
       "unit": null,
       "name": "Engine Under Speed",
       "kind": "bin"
+    },
+    "esp_internal_temperature": {
+      "object_id": "esp_internal_temperature",
+      "esphome_id": "esp_temp",
+      "unit": "\u00b0C",
+      "name": "ESP Internal Temperature",
+      "kind": "num"
     },
     "exercising": {
       "object_id": "exercising",
@@ -841,6 +855,13 @@
       "unit": null,
       "name": "Water Level Switch",
       "kind": "bin"
+    },
+    "wi-fi_signal": {
+      "object_id": "wi-fi_signal",
+      "esphome_id": "wifi_rssi",
+      "unit": "dBm",
+      "name": "Wi-Fi Signal",
+      "kind": "num"
     }
   },
   "alarm_keys": [

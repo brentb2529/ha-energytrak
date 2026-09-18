@@ -5,7 +5,7 @@ bridge. The EnergyTrak cloud has never carried any of these; they appear
 only while the bridge is reachable, which is why every one of them is
 created through async_setup_reported_entities rather than unconditionally.
 
-Source contract: schema 1, 100 local-only keys.
+Source contract: schema 1, 103 local-only keys.
 """
 from __future__ import annotations
 
@@ -165,6 +165,15 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("status_register"),
     ),
     EnergyTrakSensorDescription(
+        key="uptime",
+        translation_key="uptime",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=_key("uptime"),
+    ),
+    EnergyTrakSensorDescription(
         key="bus_witness",
         translation_key="bus_witness",
         device_class=SensorDeviceClass.VOLTAGE,
@@ -206,6 +215,15 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         suggested_display_precision=1,
         value_fn=_key("cumulative_reactive_energy"),
+    ),
+    EnergyTrakSensorDescription(
+        key="esp_internal_temperature",
+        translation_key="esp_internal_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=_key("esp_internal_temperature"),
     ),
     EnergyTrakSensorDescription(
         key="fuel_level",
@@ -401,6 +419,14 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         value_fn=_key("utility_l3_voltage"),
+    ),
+    EnergyTrakSensorDescription(
+        key="wi-fi_signal",
+        translation_key="wi-fi_signal",
+        native_unit_of_measurement="dBm",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_key("wi-fi_signal"),
     ),
 )
 

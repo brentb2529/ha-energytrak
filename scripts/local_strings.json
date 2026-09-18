@@ -122,6 +122,9 @@
   "engine_under_speed": {
     "name": "Engine Under Speed"
   },
+  "esp_internal_temperature": {
+    "name": "ESP Internal Temperature"
+  },
   "exercising": {
     "name": "Exercising"
   },
@@ -272,6 +275,9 @@
   "unbalanced_load": {
     "name": "Unbalanced Load"
   },
+  "uptime": {
+    "name": "Uptime"
+  },
   "utility_l1_voltage": {
     "name": "Utility L1 Voltage"
   },
@@ -298,5 +304,8 @@
   },
   "water_level_switch": {
     "name": "Water Level Switch"
+  },
+  "wi-fi_signal": {
+    "name": "Wi-Fi Signal"
   }
 }
