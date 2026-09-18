@@ -272,8 +272,8 @@
   "unbalanced_load": {
     "name": "Unbalanced Load"
   },
-  "utility_l1-l2_voltage": {
-    "name": "Utility L1-L2 Voltage"
+  "utility_l1_voltage": {
+    "name": "Utility L1 Voltage"
   },
   "utility_l2-l3_voltage": {
     "name": "Utility L2-L3 Voltage"

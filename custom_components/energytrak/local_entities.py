@@ -340,13 +340,13 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("percentage_load"),
     ),
     EnergyTrakSensorDescription(
-        key="utility_l1-l2_voltage",
-        translation_key="utility_l1-l2_voltage",
+        key="utility_l1_voltage",
+        translation_key="utility_l1_voltage",
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
-        value_fn=_key("utility_l1-l2_voltage"),
+        value_fn=_key("utility_l1_voltage"),
     ),
     EnergyTrakSensorDescription(
         key="utility_l2_frequency",

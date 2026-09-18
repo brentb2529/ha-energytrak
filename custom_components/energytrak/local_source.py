@@ -81,6 +81,51 @@ def load_contract() -> dict[str, Any]:
     return json.loads(_CONTRACT_PATH.read_text())
 
 
+# A shared key must be drop-in compatible with the cloud's VALUE, not merely
+# with its name. Entity ids survive a source switch so that dashboards and
+# alert rules need no changes -- but that promise is only kept if the state
+# they read means the same thing afterwards.
+#
+# Measured on production at the moment the bridge took over:
+#
+#   operation_mode   "AUTO"     ->  "Automatic"
+#   ignition_status   0         ->  "Stopped"
+#
+# Neither is wrong; both are a different vocabulary for the same fact. The
+# damage is downstream and silent. B-Panels matches operation_mode as a string,
+# the Grafana push carries it as a TAG (so a changed value starts a brand new
+# series and the old one flatlines rather than erroring), and the ignition
+# gauge maps on/true/1 and off/false/0 -- "Stopped" matches neither arm, so the
+# metric was simply omitted and the panel went blank.
+#
+# So the bridge's richer vocabulary is folded back to the cloud's on the way
+# out. The full text stays available on the local-only entities
+# (switch_status, engine_state), which is where you would look for it.
+_SHARED_TEXT_ALIASES: dict[str, dict[str, Any]] = {
+    "operation_mode": {
+        "automatic": "AUTO",
+        "manual": "MANUAL",
+        "off": "OFF",
+        "test": "TEST",
+    },
+    "ignition_status": {
+        "running": 1,
+        "starting": 1,
+        "stopped": 0,
+        "stopping": 0,
+        "off": 0,
+    },
+}
+
+
+def _to_cloud_vocabulary(key: str, value: Any) -> Any:
+    """Translate a bridge value into the cloud's representation of that key."""
+    table = _SHARED_TEXT_ALIASES.get(key)
+    if table is None or not isinstance(value, str):
+        return value
+    return table.get(value.strip().lower(), value)
+
+
 class LocalBridgeUnavailable(Exception):
     """Raised when the bridge cannot be reached or does not look like ours."""
 
@@ -306,7 +351,13 @@ class LocalBridge:
                 # HA state machine both want it gone rather than propagated.
                 if isinstance(value, float) and value != value:
                     continue
-                out[key] = value
+                # Modbus gives far more precision than the sensor has. Raw
+                # floats (13.100000381469727 for a 0.1V reading) are ugly in
+                # the UI, bloat the recorder, and make every long-term
+                # statistic a distinct value. The cloud sent 13.1; match it.
+                if isinstance(value, float):
+                    value = round(value, 3)
+                out[key] = _to_cloud_vocabulary(key, value)
 
         out.update(self._derive())
         out["telemetry_source"] = "local"

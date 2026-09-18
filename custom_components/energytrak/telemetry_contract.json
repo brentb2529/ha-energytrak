@@ -24,7 +24,7 @@
       "kind": "num"
     },
     "grid_voltage": {
-      "object_id": "utility_l1_voltage",
+      "object_id": "utility_l1-l2_voltage",
       "kind": "num"
     },
     "output_voltage_l1n": {
@@ -779,11 +779,11 @@
       "name": "Unbalanced Load",
       "kind": "bin"
     },
-    "utility_l1-l2_voltage": {
-      "object_id": "utility_l1-l2_voltage",
-      "esphome_id": "utility_l1_l2_voltage",
+    "utility_l1_voltage": {
+      "object_id": "utility_l1_voltage",
+      "esphome_id": "utility_l1_voltage",
       "unit": "V",
-      "name": "Utility L1-L2 Voltage",
+      "name": "Utility L1 Voltage",
       "kind": "num"
     },
     "utility_l2_frequency": {
@@ -913,7 +913,7 @@
     {
       "key": "grid_voltage",
       "scale": 10,
-      "esphome_id": "utility_l1_voltage"
+      "esphome_id": "utility_l1_l2_voltage"
     },
     {
       "key": "generator_frequency",
