@@ -104,62 +104,170 @@
   },
   "entity": {
     "sensor": {
+      "active_alarm_count": {
+        "name": "Active alarms"
+      },
+      "alarm_register_1": {
+        "name": "Alarm Register 1"
+      },
+      "alarm_register_10": {
+        "name": "Alarm Register 10"
+      },
+      "alarm_register_11": {
+        "name": "Alarm Register 11"
+      },
+      "alarm_register_12": {
+        "name": "Alarm Register 12"
+      },
+      "alarm_register_13": {
+        "name": "Alarm Register 13"
+      },
+      "alarm_register_14": {
+        "name": "Alarm Register 14"
+      },
+      "alarm_register_15": {
+        "name": "Alarm Register 15"
+      },
+      "alarm_register_2": {
+        "name": "Alarm Register 2"
+      },
+      "alarm_register_3": {
+        "name": "Alarm Register 3"
+      },
+      "alarm_register_4": {
+        "name": "Alarm Register 4"
+      },
+      "alarm_register_5": {
+        "name": "Alarm Register 5"
+      },
+      "alarm_register_6": {
+        "name": "Alarm Register 6"
+      },
+      "alarm_register_7": {
+        "name": "Alarm Register 7"
+      },
+      "alarm_register_8": {
+        "name": "Alarm Register 8"
+      },
+      "alarm_register_9": {
+        "name": "Alarm Register 9"
+      },
       "battery_voltage": {
         "name": "Battery voltage"
+      },
+      "bus_witness": {
+        "name": "bus_witness"
+      },
+      "coolant_temperature": {
+        "name": "Coolant Temperature"
+      },
+      "cumulative_apparent_energy": {
+        "name": "Cumulative Apparent Energy"
+      },
+      "cumulative_energy": {
+        "name": "Cumulative Energy"
+      },
+      "cumulative_reactive_energy": {
+        "name": "Cumulative Reactive Energy"
       },
       "engine_hours": {
         "name": "Engine hours"
       },
-      "status": {
-        "name": "Status"
+      "engine_speed": {
+        "name": "Engine speed"
       },
-      "grid_status": {
-        "name": "Grid status"
+      "equipment_data_age": {
+        "name": "Equipment data age"
       },
-      "load_power": {
-        "name": "Load power"
+      "equipment_data_timestamp": {
+        "name": "Equipment data timestamp"
       },
-      "output_voltage": {
-        "name": "Output voltage"
+      "fault_condition": {
+        "name": "Fault condition"
       },
-      "grid_voltage": {
-        "name": "Grid voltage"
+      "firmware_update_status": {
+        "name": "Firmware update status"
+      },
+      "fuel_level": {
+        "name": "Fuel Level"
+      },
+      "fuel_type": {
+        "name": "Fuel type"
+      },
+      "fuel_volume": {
+        "name": "Fuel Volume"
       },
       "generator_frequency": {
         "name": "Output frequency"
       },
+      "generator_l1-l2_voltage": {
+        "name": "Generator L1-L2 Voltage"
+      },
+      "generator_l1_l2_voltage": {
+        "name": "Generator L1-L2 Voltage"
+      },
+      "generator_l2-l3_voltage": {
+        "name": "Generator L2-L3 Voltage"
+      },
+      "generator_l2_frequency": {
+        "name": "Generator L2 Frequency"
+      },
+      "generator_l2_l3_voltage": {
+        "name": "Generator L2-L3 Voltage"
+      },
+      "generator_l3-l1_voltage": {
+        "name": "Generator L3-L1 Voltage"
+      },
+      "generator_l3_current": {
+        "name": "Generator L3 Current"
+      },
+      "generator_l3_frequency": {
+        "name": "Generator L3 Frequency"
+      },
+      "generator_l3_l1_voltage": {
+        "name": "Generator L3-L1 Voltage"
+      },
+      "generator_l3_voltage": {
+        "name": "Generator L3 Voltage"
+      },
       "grid_frequency": {
         "name": "Grid frequency"
       },
-      "engine_speed": {
-        "name": "Engine speed"
+      "grid_status": {
+        "name": "Grid status"
       },
-      "active_alarm_count": {
-        "name": "Active alarms"
+      "grid_voltage": {
+        "name": "Grid voltage"
       },
-      "starts_count": {
-        "name": "Starts"
+      "health": {
+        "name": "Health"
       },
-      "trips_count": {
-        "name": "Trips"
+      "ignition_status": {
+        "name": "Ignition"
       },
-      "output_voltage_l1n": {
-        "name": "Output voltage L1-N"
+      "l3_apparent_power": {
+        "name": "L3 Apparent Power"
       },
-      "output_voltage_l2n": {
-        "name": "Output voltage L2-N"
+      "l3_power": {
+        "name": "L3 Power"
       },
-      "load_l1_power": {
-        "name": "Load power L1"
+      "l3_power_factor": {
+        "name": "L3 Power Factor"
       },
-      "load_l2_power": {
-        "name": "Load power L2"
+      "l3_reactive_power": {
+        "name": "L3 Reactive Power"
       },
-      "load_l1_current": {
-        "name": "Load current L1"
+      "last_changed": {
+        "name": "Last changed"
       },
-      "load_l2_current": {
-        "name": "Load current L2"
+      "last_exercise": {
+        "name": "Last exercise"
+      },
+      "last_exercise_duration": {
+        "name": "Last exercise duration"
+      },
+      "last_received": {
+        "name": "Last received"
       },
       "load_apparent_power": {
         "name": "Apparent power"
@@ -167,17 +275,65 @@
       "load_l1_apparent_power": {
         "name": "Apparent power L1"
       },
-      "load_l2_apparent_power": {
-        "name": "Apparent power L2"
+      "load_l1_current": {
+        "name": "Load current L1"
       },
-      "load_reactive_power": {
-        "name": "Reactive power"
+      "load_l1_power": {
+        "name": "Load power L1"
       },
       "load_l1_reactive_power": {
         "name": "Reactive power L1"
       },
+      "load_l2_apparent_power": {
+        "name": "Apparent power L2"
+      },
+      "load_l2_current": {
+        "name": "Load current L2"
+      },
+      "load_l2_power": {
+        "name": "Load power L2"
+      },
       "load_l2_reactive_power": {
         "name": "Reactive power L2"
+      },
+      "load_power": {
+        "name": "Load power"
+      },
+      "load_reactive_power": {
+        "name": "Reactive power"
+      },
+      "local_bus_age_seconds": {
+        "name": "Local bus age"
+      },
+      "monitor_state": {
+        "name": "Monitor state"
+      },
+      "network_strength": {
+        "name": "Network strength"
+      },
+      "next_exercise": {
+        "name": "Next exercise due"
+      },
+      "oil_pressure": {
+        "name": "Oil Pressure"
+      },
+      "oil_pressure_bar": {
+        "name": "Oil Pressure"
+      },
+      "operation_mode": {
+        "name": "Operation mode"
+      },
+      "output_voltage": {
+        "name": "Output voltage"
+      },
+      "output_voltage_l1n": {
+        "name": "Output voltage L1-N"
+      },
+      "output_voltage_l2n": {
+        "name": "Output voltage L2-N"
+      },
+      "percentage_load": {
+        "name": "Percentage Load"
       },
       "power_factor": {
         "name": "Power factor"
@@ -188,91 +344,284 @@
       "power_factor_l2": {
         "name": "Power factor L2"
       },
-      "operation_mode": {
-        "name": "Operation mode"
-      },
-      "fault_condition": {
-        "name": "Fault condition"
-      },
-      "fuel_type": {
-        "name": "Fuel type"
-      },
-      "ignition_status": {
-        "name": "Ignition"
-      },
-      "health": {
-        "name": "Health"
-      },
-      "utility_monitor": {
-        "name": "Utility monitor"
-      },
-      "equipment_data_age": {
-        "name": "Equipment data age"
-      },
-      "equipment_data_timestamp": {
-        "name": "Equipment data timestamp"
-      },
-      "last_received": {
-        "name": "Last received"
-      },
-      "last_changed": {
-        "name": "Last changed"
-      },
-      "utility_power": {
-        "name": "Utility power"
-      },
-      "network_strength": {
-        "name": "Network strength"
-      },
-      "monitor_state": {
-        "name": "Monitor state"
-      },
-      "firmware_update_status": {
-        "name": "Firmware update status"
-      },
-      "last_exercise": {
-        "name": "Last exercise"
-      },
-      "last_exercise_duration": {
-        "name": "Last exercise duration"
-      },
-      "next_exercise": {
-        "name": "Next exercise due"
+      "power_status": {
+        "name": "Power Status"
       },
       "site_health": {
         "name": "Site health"
       },
       "site_state": {
         "name": "Site state"
+      },
+      "starts_count": {
+        "name": "Starts"
+      },
+      "status": {
+        "name": "Status"
+      },
+      "status_register": {
+        "name": "Status Register"
+      },
+      "telemetry_source": {
+        "name": "Telemetry source",
+        "state": {
+          "local": "Local bridge",
+          "cloud": "EnergyTrak cloud"
+        }
+      },
+      "trips_count": {
+        "name": "Trips"
+      },
+      "utility_l1-l2_voltage": {
+        "name": "Utility L1-L2 Voltage"
+      },
+      "utility_l1_l2_voltage": {
+        "name": "Utility L1-L2 Voltage"
+      },
+      "utility_l2-l3_voltage": {
+        "name": "Utility L2-L3 Voltage"
+      },
+      "utility_l2_frequency": {
+        "name": "Utility L2 Frequency"
+      },
+      "utility_l2_l3_voltage": {
+        "name": "Utility L2-L3 Voltage"
+      },
+      "utility_l2_voltage": {
+        "name": "Utility L2 Voltage"
+      },
+      "utility_l3-l1_voltage": {
+        "name": "Utility L3-L1 Voltage"
+      },
+      "utility_l3_frequency": {
+        "name": "Utility L3 Frequency"
+      },
+      "utility_l3_l1_voltage": {
+        "name": "Utility L3-L1 Voltage"
+      },
+      "utility_l3_voltage": {
+        "name": "Utility L3 Voltage"
+      },
+      "utility_monitor": {
+        "name": "Utility monitor"
+      },
+      "utility_power": {
+        "name": "Utility power"
       }
     },
     "binary_sensor": {
-      "running": {
-        "name": "Running"
+      "alternator_input_lost": {
+        "name": "Alternator Input Lost"
       },
-      "grid_present": {
-        "name": "Grid power"
+      "auxiliary_input_a": {
+        "name": "Auxiliary Input A"
       },
-      "fault": {
-        "name": "Fault"
+      "auxiliary_input_b": {
+        "name": "Auxiliary Input B"
+      },
+      "auxiliary_input_c": {
+        "name": "Auxiliary Input C"
+      },
+      "auxiliary_input_d": {
+        "name": "Auxiliary Input D"
+      },
+      "auxiliary_input_e": {
+        "name": "Auxiliary Input E"
+      },
+      "auxiliary_input_f": {
+        "name": "Auxiliary Input F"
+      },
+      "auxiliary_input_g": {
+        "name": "Auxiliary Input G"
+      },
+      "auxiliary_input_h": {
+        "name": "Auxiliary Input H"
+      },
+      "auxiliary_input_i": {
+        "name": "Auxiliary Input I"
+      },
+      "battery_high_voltage": {
+        "name": "Battery High Voltage"
+      },
+      "battery_low_voltage": {
+        "name": "Battery Low Voltage"
+      },
+      "dg_phase_rotation": {
+        "name": "DG Phase Rotation"
+      },
+      "electrical_trip": {
+        "name": "Electrical Trip"
+      },
+      "emergency_stop": {
+        "name": "Emergency Stop"
+      },
+      "engine_failed_to_start": {
+        "name": "Engine Failed to Start"
+      },
+      "engine_failed_to_stop": {
+        "name": "Engine Failed to Stop"
+      },
+      "engine_over_speed": {
+        "name": "Engine Over Speed"
+      },
+      "engine_running": {
+        "name": "Engine Running"
+      },
+      "engine_starting": {
+        "name": "Engine Starting"
+      },
+      "engine_under_speed": {
+        "name": "Engine Under Speed"
       },
       "equipment_data_stale": {
         "name": "Equipment data stale"
       },
-      "smart_mode": {
-        "name": "Smart mode"
+      "exercising": {
+        "name": "Exercising"
       },
-      "monitor_online": {
-        "name": "Monitor online"
+      "extended_over_load_trip": {
+        "name": "Extended Over Load Trip"
       },
-      "malfunction": {
-        "name": "Malfunction"
+      "fault": {
+        "name": "Fault"
+      },
+      "fuel_cap_open_circuit": {
+        "name": "Fuel Cap Open Circuit"
+      },
+      "fuel_theft": {
+        "name": "Fuel Theft"
+      },
+      "gen_l1_phase_high_voltage": {
+        "name": "Gen L1 Phase High Voltage"
+      },
+      "gen_l1_phase_low_voltage": {
+        "name": "Gen L1 Phase Low Voltage"
+      },
+      "gen_l2_phase_high_voltage": {
+        "name": "Gen L2 Phase High Voltage"
+      },
+      "gen_l2_phase_low_voltage": {
+        "name": "Gen L2 Phase Low Voltage"
+      },
+      "gen_l3_phase_high_voltage": {
+        "name": "Gen L3 Phase High Voltage"
+      },
+      "gen_l3_phase_low_voltage": {
+        "name": "Gen L3 Phase Low Voltage"
+      },
+      "general_notification": {
+        "name": "General Notification"
+      },
+      "general_warning": {
+        "name": "General Warning"
+      },
+      "generator_failed_to_start": {
+        "name": "Generator Failed to Start"
+      },
+      "generator_high_current": {
+        "name": "Generator High Current"
+      },
+      "generator_high_frequency": {
+        "name": "Generator High Frequency"
+      },
+      "generator_low_frequency": {
+        "name": "Generator Low Frequency"
+      },
+      "generator_overload": {
+        "name": "Generator Overload"
+      },
+      "grid_present": {
+        "name": "Grid power"
+      },
+      "high_coolant_temperature": {
+        "name": "High Coolant Temperature"
+      },
+      "high_oil_pressure_detected": {
+        "name": "High Oil Pressure Detected"
+      },
+      "high_voltage_warning_1__ph-ph_": {
+        "name": "High Voltage Warning 1 (Ph-Ph)"
+      },
+      "high_voltage_warning_1_ph_ph": {
+        "name": "High Voltage Warning 1 (Ph-Ph)"
+      },
+      "high_voltage_warning_2__ph-ph_": {
+        "name": "High Voltage Warning 2 (Ph-Ph)"
+      },
+      "high_voltage_warning_2_ph_ph": {
+        "name": "High Voltage Warning 2 (Ph-Ph)"
+      },
+      "high_voltage_warning__ph-ph_": {
+        "name": "High Voltage Warning (Ph-Ph)"
+      },
+      "high_voltage_warning_ph_ph": {
+        "name": "High Voltage Warning (Ph-Ph)"
       },
       "local_bridge_connected": {
         "name": "Bridge reachable"
       },
       "local_bus_healthy": {
         "name": "Generator bus healthy"
+      },
+      "low_fuel_level": {
+        "name": "Low Fuel Level"
+      },
+      "low_oil_pressure": {
+        "name": "Low Oil Pressure"
+      },
+      "low_voltage_failure_1__ph-ph_": {
+        "name": "Low Voltage Failure 1 (Ph-Ph)"
+      },
+      "low_voltage_failure_1_ph_ph": {
+        "name": "Low Voltage Failure 1 (Ph-Ph)"
+      },
+      "low_voltage_failure_2__ph-ph_": {
+        "name": "Low Voltage Failure 2 (Ph-Ph)"
+      },
+      "low_voltage_failure_2_ph_ph": {
+        "name": "Low Voltage Failure 2 (Ph-Ph)"
+      },
+      "magnetic_pick_up_fault": {
+        "name": "Magnetic Pick Up Fault"
+      },
+      "mains_phase_rotation": {
+        "name": "Mains Phase Rotation"
+      },
+      "maintenance_required": {
+        "name": "Maintenance Required"
+      },
+      "malfunction": {
+        "name": "Malfunction"
+      },
+      "monitor_online": {
+        "name": "Monitor online"
+      },
+      "oil_pressure_open_circuit": {
+        "name": "Oil Pressure Open Circuit"
+      },
+      "running": {
+        "name": "Running"
+      },
+      "scheduled_exercise": {
+        "name": "Scheduled Exercise in Progress"
+      },
+      "scheduled_exercise_in_progress": {
+        "name": "Scheduled Exercise in Progress"
+      },
+      "smart_mode": {
+        "name": "Smart mode"
+      },
+      "temperature_circuit_open": {
+        "name": "Temperature Circuit Open"
+      },
+      "unbalanced_load": {
+        "name": "Unbalanced Load"
+      },
+      "utility_power_failure": {
+        "name": "Utility Power Failure"
+      },
+      "water_level_switch": {
+        "name": "Water Level Switch"
       }
     }
   }
