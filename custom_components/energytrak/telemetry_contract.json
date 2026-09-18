@@ -1,0 +1,903 @@
+{
+  "schema": 1,
+  "topic": "telemetry",
+  "publish_interval_s": 10,
+  "shared_keys": {
+    "battery_voltage": {
+      "object_id": "battery_voltage",
+      "kind": "num"
+    },
+    "engine_speed": {
+      "object_id": "engine_speed",
+      "kind": "num"
+    },
+    "engine_hours": {
+      "object_id": "engine_run_time",
+      "kind": "num"
+    },
+    "generator_frequency": {
+      "object_id": "generator_l1_frequency",
+      "kind": "num"
+    },
+    "grid_frequency": {
+      "object_id": "utility_l1_frequency",
+      "kind": "num"
+    },
+    "grid_voltage": {
+      "object_id": "utility_l1_voltage",
+      "kind": "num"
+    },
+    "output_voltage_l1n": {
+      "object_id": "generator_l1_voltage",
+      "kind": "num"
+    },
+    "output_voltage_l2n": {
+      "object_id": "generator_l2_voltage",
+      "kind": "num"
+    },
+    "load_l1_current": {
+      "object_id": "generator_l1_current",
+      "kind": "num"
+    },
+    "load_l2_current": {
+      "object_id": "generator_l2_current",
+      "kind": "num"
+    },
+    "load_l1_power": {
+      "object_id": "l1_power",
+      "kind": "num"
+    },
+    "load_l2_power": {
+      "object_id": "l2_power",
+      "kind": "num"
+    },
+    "load_power": {
+      "object_id": "total_power",
+      "kind": "num"
+    },
+    "load_l1_apparent_power": {
+      "object_id": "l1_apparent_power",
+      "kind": "num"
+    },
+    "load_l2_apparent_power": {
+      "object_id": "l2_apparent_power",
+      "kind": "num"
+    },
+    "load_apparent_power": {
+      "object_id": "total_apparent_power",
+      "kind": "num"
+    },
+    "load_l1_reactive_power": {
+      "object_id": "l1_reactive_power",
+      "kind": "num"
+    },
+    "load_l2_reactive_power": {
+      "object_id": "l2_reactive_power",
+      "kind": "num"
+    },
+    "load_reactive_power": {
+      "object_id": "total_reactive_power",
+      "kind": "num"
+    },
+    "power_factor": {
+      "object_id": "average_power_factor",
+      "kind": "num"
+    },
+    "power_factor_l1": {
+      "object_id": "l1_power_factor",
+      "kind": "num"
+    },
+    "power_factor_l2": {
+      "object_id": "l2_power_factor",
+      "kind": "num"
+    },
+    "operation_mode": {
+      "object_id": "switch_status",
+      "kind": "txt"
+    },
+    "ignition_status": {
+      "object_id": "engine_state",
+      "kind": "txt"
+    },
+    "fault_condition": {
+      "object_id": "common_shutdown",
+      "kind": "bin"
+    },
+    "last_exercise_at": {
+      "object_id": "last_exercise",
+      "kind": "txt"
+    },
+    "last_exercise_duration_seconds": {
+      "object_id": "last_exercise_duration",
+      "kind": "num"
+    }
+  },
+  "derived": {
+    "grid_present": {
+      "op": "not",
+      "src": "utility_power_failure"
+    },
+    "grid_status": {
+      "op": "map_bool",
+      "src": "utility_power_failure",
+      "true": "Lost",
+      "false": "Present"
+    },
+    "active_alarm_count": {
+      "op": "count_true",
+      "src": "@alarms"
+    },
+    "active_alarms": {
+      "op": "join_true",
+      "src": "@alarms",
+      "empty": "None"
+    },
+    "has_malfunction": {
+      "op": "copy",
+      "src": "common_shutdown"
+    },
+    "monitor_online": {
+      "op": "const",
+      "value": true
+    }
+  },
+  "local_only_keys": {
+    "alarm_register_1": {
+      "object_id": "alarm_register_1",
+      "esphome_id": "alarm_reg_40",
+      "unit": null,
+      "name": "Alarm Register 1",
+      "kind": "num"
+    },
+    "alarm_register_2": {
+      "object_id": "alarm_register_2",
+      "esphome_id": "alarm_reg_41",
+      "unit": null,
+      "name": "Alarm Register 2",
+      "kind": "num"
+    },
+    "alarm_register_3": {
+      "object_id": "alarm_register_3",
+      "esphome_id": "alarm_reg_42",
+      "unit": null,
+      "name": "Alarm Register 3",
+      "kind": "num"
+    },
+    "alarm_register_4": {
+      "object_id": "alarm_register_4",
+      "esphome_id": "alarm_reg_43",
+      "unit": null,
+      "name": "Alarm Register 4",
+      "kind": "num"
+    },
+    "alarm_register_5": {
+      "object_id": "alarm_register_5",
+      "esphome_id": "alarm_reg_44",
+      "unit": null,
+      "name": "Alarm Register 5",
+      "kind": "num"
+    },
+    "alarm_register_6": {
+      "object_id": "alarm_register_6",
+      "esphome_id": "alarm_reg_45",
+      "unit": null,
+      "name": "Alarm Register 6",
+      "kind": "num"
+    },
+    "alarm_register_7": {
+      "object_id": "alarm_register_7",
+      "esphome_id": "alarm_reg_46",
+      "unit": null,
+      "name": "Alarm Register 7",
+      "kind": "num"
+    },
+    "alarm_register_8": {
+      "object_id": "alarm_register_8",
+      "esphome_id": "alarm_reg_47",
+      "unit": null,
+      "name": "Alarm Register 8",
+      "kind": "num"
+    },
+    "alarm_register_9": {
+      "object_id": "alarm_register_9",
+      "esphome_id": "alarm_reg_48",
+      "unit": null,
+      "name": "Alarm Register 9",
+      "kind": "num"
+    },
+    "alarm_register_10": {
+      "object_id": "alarm_register_10",
+      "esphome_id": "alarm_reg_49",
+      "unit": null,
+      "name": "Alarm Register 10",
+      "kind": "num"
+    },
+    "alarm_register_11": {
+      "object_id": "alarm_register_11",
+      "esphome_id": "alarm_reg_4a",
+      "unit": null,
+      "name": "Alarm Register 11",
+      "kind": "num"
+    },
+    "alarm_register_12": {
+      "object_id": "alarm_register_12",
+      "esphome_id": "alarm_reg_4b",
+      "unit": null,
+      "name": "Alarm Register 12",
+      "kind": "num"
+    },
+    "alarm_register_13": {
+      "object_id": "alarm_register_13",
+      "esphome_id": "alarm_reg_4c",
+      "unit": null,
+      "name": "Alarm Register 13",
+      "kind": "num"
+    },
+    "alarm_register_14": {
+      "object_id": "alarm_register_14",
+      "esphome_id": "alarm_reg_4d",
+      "unit": null,
+      "name": "Alarm Register 14",
+      "kind": "num"
+    },
+    "alarm_register_15": {
+      "object_id": "alarm_register_15",
+      "esphome_id": "alarm_reg_4e",
+      "unit": null,
+      "name": "Alarm Register 15",
+      "kind": "num"
+    },
+    "status_register": {
+      "object_id": "status_register",
+      "esphome_id": "alarm_reg_4f",
+      "unit": null,
+      "name": "Status Register",
+      "kind": "num"
+    },
+    "alternator_input_lost": {
+      "object_id": "alternator_input_lost",
+      "esphome_id": "alternator_input_lost",
+      "unit": null,
+      "name": "Alternator Input Lost",
+      "kind": "bin"
+    },
+    "auxiliary_input_a": {
+      "object_id": "auxiliary_input_a",
+      "esphome_id": "auxiliary_input_a",
+      "unit": null,
+      "name": "Auxiliary Input A",
+      "kind": "bin"
+    },
+    "auxiliary_input_b": {
+      "object_id": "auxiliary_input_b",
+      "esphome_id": "auxiliary_input_b",
+      "unit": null,
+      "name": "Auxiliary Input B",
+      "kind": "bin"
+    },
+    "auxiliary_input_c": {
+      "object_id": "auxiliary_input_c",
+      "esphome_id": "auxiliary_input_c",
+      "unit": null,
+      "name": "Auxiliary Input C",
+      "kind": "bin"
+    },
+    "auxiliary_input_d": {
+      "object_id": "auxiliary_input_d",
+      "esphome_id": "auxiliary_input_d",
+      "unit": null,
+      "name": "Auxiliary Input D",
+      "kind": "bin"
+    },
+    "auxiliary_input_e": {
+      "object_id": "auxiliary_input_e",
+      "esphome_id": "auxiliary_input_e",
+      "unit": null,
+      "name": "Auxiliary Input E",
+      "kind": "bin"
+    },
+    "auxiliary_input_f": {
+      "object_id": "auxiliary_input_f",
+      "esphome_id": "auxiliary_input_f",
+      "unit": null,
+      "name": "Auxiliary Input F",
+      "kind": "bin"
+    },
+    "auxiliary_input_g": {
+      "object_id": "auxiliary_input_g",
+      "esphome_id": "auxiliary_input_g",
+      "unit": null,
+      "name": "Auxiliary Input G",
+      "kind": "bin"
+    },
+    "auxiliary_input_h": {
+      "object_id": "auxiliary_input_h",
+      "esphome_id": "auxiliary_input_h",
+      "unit": null,
+      "name": "Auxiliary Input H",
+      "kind": "bin"
+    },
+    "auxiliary_input_i": {
+      "object_id": "auxiliary_input_i",
+      "esphome_id": "auxiliary_input_i",
+      "unit": null,
+      "name": "Auxiliary Input I",
+      "kind": "bin"
+    },
+    "battery_high_voltage": {
+      "object_id": "battery_high_voltage",
+      "esphome_id": "battery_high_voltage",
+      "unit": null,
+      "name": "Battery High Voltage",
+      "kind": "bin"
+    },
+    "battery_low_voltage": {
+      "object_id": "battery_low_voltage",
+      "esphome_id": "battery_low_voltage",
+      "unit": null,
+      "name": "Battery Low Voltage",
+      "kind": "bin"
+    },
+    "bus_witness": {
+      "object_id": "bus_witness",
+      "esphome_id": "bus_witness",
+      "unit": "V",
+      "name": "bus_witness",
+      "kind": "num"
+    },
+    "coolant_temperature": {
+      "object_id": "coolant_temperature",
+      "esphome_id": "coolant_temperature",
+      "unit": "\u00b0C",
+      "name": "Coolant Temperature",
+      "kind": "num"
+    },
+    "cumulative_apparent_energy": {
+      "object_id": "cumulative_apparent_energy",
+      "esphome_id": "cumulative_apparent_energy",
+      "unit": "kVAh",
+      "name": "Cumulative Apparent Energy",
+      "kind": "num"
+    },
+    "cumulative_energy": {
+      "object_id": "cumulative_energy",
+      "esphome_id": "cumulative_energy",
+      "unit": "kWh",
+      "name": "Cumulative Energy",
+      "kind": "num"
+    },
+    "cumulative_reactive_energy": {
+      "object_id": "cumulative_reactive_energy",
+      "esphome_id": "cumulative_reactive_energy",
+      "unit": "kvarh",
+      "name": "Cumulative Reactive Energy",
+      "kind": "num"
+    },
+    "dg_phase_rotation": {
+      "object_id": "dg_phase_rotation",
+      "esphome_id": "dg_phase_rotation",
+      "unit": null,
+      "name": "DG Phase Rotation",
+      "kind": "bin"
+    },
+    "electrical_trip": {
+      "object_id": "electrical_trip",
+      "esphome_id": "electrical_trip",
+      "unit": null,
+      "name": "Electrical Trip",
+      "kind": "bin"
+    },
+    "emergency_stop": {
+      "object_id": "emergency_stop",
+      "esphome_id": "emergency_stop",
+      "unit": null,
+      "name": "Emergency Stop",
+      "kind": "bin"
+    },
+    "engine_failed_to_start": {
+      "object_id": "engine_failed_to_start",
+      "esphome_id": "engine_failed_to_start",
+      "unit": null,
+      "name": "Engine Failed to Start",
+      "kind": "bin"
+    },
+    "engine_failed_to_stop": {
+      "object_id": "engine_failed_to_stop",
+      "esphome_id": "engine_failed_to_stop",
+      "unit": null,
+      "name": "Engine Failed to Stop",
+      "kind": "bin"
+    },
+    "engine_over_speed": {
+      "object_id": "engine_over_speed",
+      "esphome_id": "engine_over_speed",
+      "unit": null,
+      "name": "Engine Over Speed",
+      "kind": "bin"
+    },
+    "engine_running": {
+      "object_id": "engine_running",
+      "esphome_id": "engine_running",
+      "unit": null,
+      "name": "Engine Running",
+      "kind": "bin"
+    },
+    "engine_starting": {
+      "object_id": "engine_starting",
+      "esphome_id": "engine_starting",
+      "unit": null,
+      "name": "Engine Starting",
+      "kind": "bin"
+    },
+    "engine_under_speed": {
+      "object_id": "engine_under_speed",
+      "esphome_id": "engine_under_speed",
+      "unit": null,
+      "name": "Engine Under Speed",
+      "kind": "bin"
+    },
+    "exercising": {
+      "object_id": "exercising",
+      "esphome_id": "exercising",
+      "unit": null,
+      "name": "Exercising",
+      "kind": "bin"
+    },
+    "extended_over_load_trip": {
+      "object_id": "extended_over_load_trip",
+      "esphome_id": "extended_over_load_trip",
+      "unit": null,
+      "name": "Extended Over Load Trip",
+      "kind": "bin"
+    },
+    "fuel_cap_open_circuit": {
+      "object_id": "fuel_cap_open_circuit",
+      "esphome_id": "fuel_cap_open_circuit",
+      "unit": null,
+      "name": "Fuel Cap Open Circuit",
+      "kind": "bin"
+    },
+    "fuel_level": {
+      "object_id": "fuel_level",
+      "esphome_id": "fuel_level",
+      "unit": "%",
+      "name": "Fuel Level",
+      "kind": "num"
+    },
+    "fuel_theft": {
+      "object_id": "fuel_theft",
+      "esphome_id": "fuel_theft",
+      "unit": null,
+      "name": "Fuel Theft",
+      "kind": "bin"
+    },
+    "fuel_volume": {
+      "object_id": "fuel_volume",
+      "esphome_id": "fuel_volume",
+      "unit": "L",
+      "name": "Fuel Volume",
+      "kind": "num"
+    },
+    "gen_l1_phase_high_voltage": {
+      "object_id": "gen_l1_phase_high_voltage",
+      "esphome_id": "gen_l1_phase_high_voltage",
+      "unit": null,
+      "name": "Gen L1 Phase High Voltage",
+      "kind": "bin"
+    },
+    "gen_l1_phase_low_voltage": {
+      "object_id": "gen_l1_phase_low_voltage",
+      "esphome_id": "gen_l1_phase_low_voltage",
+      "unit": null,
+      "name": "Gen L1 Phase Low Voltage",
+      "kind": "bin"
+    },
+    "gen_l2_phase_high_voltage": {
+      "object_id": "gen_l2_phase_high_voltage",
+      "esphome_id": "gen_l2_phase_high_voltage",
+      "unit": null,
+      "name": "Gen L2 Phase High Voltage",
+      "kind": "bin"
+    },
+    "gen_l2_phase_low_voltage": {
+      "object_id": "gen_l2_phase_low_voltage",
+      "esphome_id": "gen_l2_phase_low_voltage",
+      "unit": null,
+      "name": "Gen L2 Phase Low Voltage",
+      "kind": "bin"
+    },
+    "gen_l3_phase_high_voltage": {
+      "object_id": "gen_l3_phase_high_voltage",
+      "esphome_id": "gen_l3_phase_high_voltage",
+      "unit": null,
+      "name": "Gen L3 Phase High Voltage",
+      "kind": "bin"
+    },
+    "gen_l3_phase_low_voltage": {
+      "object_id": "gen_l3_phase_low_voltage",
+      "esphome_id": "gen_l3_phase_low_voltage",
+      "unit": null,
+      "name": "Gen L3 Phase Low Voltage",
+      "kind": "bin"
+    },
+    "general_notification": {
+      "object_id": "general_notification",
+      "esphome_id": "general_notification",
+      "unit": null,
+      "name": "General Notification",
+      "kind": "bin"
+    },
+    "general_warning": {
+      "object_id": "general_warning",
+      "esphome_id": "general_warning",
+      "unit": null,
+      "name": "General Warning",
+      "kind": "bin"
+    },
+    "generator_failed_to_start": {
+      "object_id": "generator_failed_to_start",
+      "esphome_id": "generator_failed_to_start",
+      "unit": null,
+      "name": "Generator Failed to Start",
+      "kind": "bin"
+    },
+    "generator_high_current": {
+      "object_id": "generator_high_current",
+      "esphome_id": "generator_high_current",
+      "unit": null,
+      "name": "Generator High Current",
+      "kind": "bin"
+    },
+    "generator_high_frequency": {
+      "object_id": "generator_high_frequency",
+      "esphome_id": "generator_high_frequency",
+      "unit": null,
+      "name": "Generator High Frequency",
+      "kind": "bin"
+    },
+    "generator_l1-l2_voltage": {
+      "object_id": "generator_l1-l2_voltage",
+      "esphome_id": "generator_l1_l2_voltage",
+      "unit": "V",
+      "name": "Generator L1-L2 Voltage",
+      "kind": "num"
+    },
+    "generator_l2_frequency": {
+      "object_id": "generator_l2_frequency",
+      "esphome_id": "generator_l2_frequency",
+      "unit": "Hz",
+      "name": "Generator L2 Frequency",
+      "kind": "num"
+    },
+    "generator_l2-l3_voltage": {
+      "object_id": "generator_l2-l3_voltage",
+      "esphome_id": "generator_l2_l3_voltage",
+      "unit": "V",
+      "name": "Generator L2-L3 Voltage",
+      "kind": "num"
+    },
+    "generator_l3_current": {
+      "object_id": "generator_l3_current",
+      "esphome_id": "generator_l3_current",
+      "unit": "A",
+      "name": "Generator L3 Current",
+      "kind": "num"
+    },
+    "generator_l3_frequency": {
+      "object_id": "generator_l3_frequency",
+      "esphome_id": "generator_l3_frequency",
+      "unit": "Hz",
+      "name": "Generator L3 Frequency",
+      "kind": "num"
+    },
+    "generator_l3-l1_voltage": {
+      "object_id": "generator_l3-l1_voltage",
+      "esphome_id": "generator_l3_l1_voltage",
+      "unit": "V",
+      "name": "Generator L3-L1 Voltage",
+      "kind": "num"
+    },
+    "generator_l3_voltage": {
+      "object_id": "generator_l3_voltage",
+      "esphome_id": "generator_l3_voltage",
+      "unit": "V",
+      "name": "Generator L3 Voltage",
+      "kind": "num"
+    },
+    "generator_low_frequency": {
+      "object_id": "generator_low_frequency",
+      "esphome_id": "generator_low_frequency",
+      "unit": null,
+      "name": "Generator Low Frequency",
+      "kind": "bin"
+    },
+    "generator_overload": {
+      "object_id": "generator_overload",
+      "esphome_id": "generator_overload",
+      "unit": null,
+      "name": "Generator Overload",
+      "kind": "bin"
+    },
+    "high_coolant_temperature": {
+      "object_id": "high_coolant_temperature",
+      "esphome_id": "high_coolant_temperature",
+      "unit": null,
+      "name": "High Coolant Temperature",
+      "kind": "bin"
+    },
+    "high_oil_pressure_detected": {
+      "object_id": "high_oil_pressure_detected",
+      "esphome_id": "high_oil_pressure_detected",
+      "unit": null,
+      "name": "High Oil Pressure Detected",
+      "kind": "bin"
+    },
+    "high_voltage_warning_1__ph-ph_": {
+      "object_id": "high_voltage_warning_1__ph-ph_",
+      "esphome_id": "high_voltage_warning_1_ph_ph",
+      "unit": null,
+      "name": "High Voltage Warning 1 (Ph-Ph)",
+      "kind": "bin"
+    },
+    "high_voltage_warning_2__ph-ph_": {
+      "object_id": "high_voltage_warning_2__ph-ph_",
+      "esphome_id": "high_voltage_warning_2_ph_ph",
+      "unit": null,
+      "name": "High Voltage Warning 2 (Ph-Ph)",
+      "kind": "bin"
+    },
+    "high_voltage_warning__ph-ph_": {
+      "object_id": "high_voltage_warning__ph-ph_",
+      "esphome_id": "high_voltage_warning_ph_ph",
+      "unit": null,
+      "name": "High Voltage Warning (Ph-Ph)",
+      "kind": "bin"
+    },
+    "l3_apparent_power": {
+      "object_id": "l3_apparent_power",
+      "esphome_id": "l3_apparent_power",
+      "unit": "kVA",
+      "name": "L3 Apparent Power",
+      "kind": "num"
+    },
+    "l3_power": {
+      "object_id": "l3_power",
+      "esphome_id": "l3_power",
+      "unit": "kW",
+      "name": "L3 Power",
+      "kind": "num"
+    },
+    "l3_power_factor": {
+      "object_id": "l3_power_factor",
+      "esphome_id": "l3_power_factor",
+      "unit": null,
+      "name": "L3 Power Factor",
+      "kind": "num"
+    },
+    "l3_reactive_power": {
+      "object_id": "l3_reactive_power",
+      "esphome_id": "l3_reactive_power",
+      "unit": "kvar",
+      "name": "L3 Reactive Power",
+      "kind": "num"
+    },
+    "low_fuel_level": {
+      "object_id": "low_fuel_level",
+      "esphome_id": "low_fuel_level",
+      "unit": null,
+      "name": "Low Fuel Level",
+      "kind": "bin"
+    },
+    "low_oil_pressure": {
+      "object_id": "low_oil_pressure",
+      "esphome_id": "low_oil_pressure",
+      "unit": null,
+      "name": "Low Oil Pressure",
+      "kind": "bin"
+    },
+    "low_voltage_failure_1__ph-ph_": {
+      "object_id": "low_voltage_failure_1__ph-ph_",
+      "esphome_id": "low_voltage_failure_1_ph_ph",
+      "unit": null,
+      "name": "Low Voltage Failure 1 (Ph-Ph)",
+      "kind": "bin"
+    },
+    "low_voltage_failure_2__ph-ph_": {
+      "object_id": "low_voltage_failure_2__ph-ph_",
+      "esphome_id": "low_voltage_failure_2_ph_ph",
+      "unit": null,
+      "name": "Low Voltage Failure 2 (Ph-Ph)",
+      "kind": "bin"
+    },
+    "magnetic_pick_up_fault": {
+      "object_id": "magnetic_pick_up_fault",
+      "esphome_id": "magnetic_pick_up_fault",
+      "unit": null,
+      "name": "Magnetic Pick Up Fault",
+      "kind": "bin"
+    },
+    "mains_phase_rotation": {
+      "object_id": "mains_phase_rotation",
+      "esphome_id": "mains_phase_rotation",
+      "unit": null,
+      "name": "Mains Phase Rotation",
+      "kind": "bin"
+    },
+    "maintenance_required": {
+      "object_id": "maintenance_required",
+      "esphome_id": "maintenance_required",
+      "unit": null,
+      "name": "Maintenance Required",
+      "kind": "bin"
+    },
+    "oil_pressure": {
+      "object_id": "oil_pressure",
+      "esphome_id": "oil_pressure_bar",
+      "unit": "bar",
+      "name": "Oil Pressure",
+      "kind": "num"
+    },
+    "oil_pressure_open_circuit": {
+      "object_id": "oil_pressure_open_circuit",
+      "esphome_id": "oil_pressure_open_circuit",
+      "unit": null,
+      "name": "Oil Pressure Open Circuit",
+      "kind": "bin"
+    },
+    "percentage_load": {
+      "object_id": "percentage_load",
+      "esphome_id": "percentage_load",
+      "unit": "%",
+      "name": "Percentage Load",
+      "kind": "num"
+    },
+    "power_status": {
+      "object_id": "power_status",
+      "esphome_id": "power_status",
+      "unit": null,
+      "name": "Power Status",
+      "kind": "txt"
+    },
+    "scheduled_exercise_in_progress": {
+      "object_id": "scheduled_exercise_in_progress",
+      "esphome_id": "scheduled_exercise",
+      "unit": null,
+      "name": "Scheduled Exercise in Progress",
+      "kind": "bin"
+    },
+    "temperature_circuit_open": {
+      "object_id": "temperature_circuit_open",
+      "esphome_id": "temperature_circuit_open",
+      "unit": null,
+      "name": "Temperature Circuit Open",
+      "kind": "bin"
+    },
+    "unbalanced_load": {
+      "object_id": "unbalanced_load",
+      "esphome_id": "unbalanced_load",
+      "unit": null,
+      "name": "Unbalanced Load",
+      "kind": "bin"
+    },
+    "utility_l1-l2_voltage": {
+      "object_id": "utility_l1-l2_voltage",
+      "esphome_id": "utility_l1_l2_voltage",
+      "unit": "V",
+      "name": "Utility L1-L2 Voltage",
+      "kind": "num"
+    },
+    "utility_l2_frequency": {
+      "object_id": "utility_l2_frequency",
+      "esphome_id": "utility_l2_frequency",
+      "unit": "Hz",
+      "name": "Utility L2 Frequency",
+      "kind": "num"
+    },
+    "utility_l2-l3_voltage": {
+      "object_id": "utility_l2-l3_voltage",
+      "esphome_id": "utility_l2_l3_voltage",
+      "unit": "V",
+      "name": "Utility L2-L3 Voltage",
+      "kind": "num"
+    },
+    "utility_l2_voltage": {
+      "object_id": "utility_l2_voltage",
+      "esphome_id": "utility_l2_voltage",
+      "unit": "V",
+      "name": "Utility L2 Voltage",
+      "kind": "num"
+    },
+    "utility_l3_frequency": {
+      "object_id": "utility_l3_frequency",
+      "esphome_id": "utility_l3_frequency",
+      "unit": "Hz",
+      "name": "Utility L3 Frequency",
+      "kind": "num"
+    },
+    "utility_l3-l1_voltage": {
+      "object_id": "utility_l3-l1_voltage",
+      "esphome_id": "utility_l3_l1_voltage",
+      "unit": "V",
+      "name": "Utility L3-L1 Voltage",
+      "kind": "num"
+    },
+    "utility_l3_voltage": {
+      "object_id": "utility_l3_voltage",
+      "esphome_id": "utility_l3_voltage",
+      "unit": "V",
+      "name": "Utility L3 Voltage",
+      "kind": "num"
+    },
+    "utility_power_failure": {
+      "object_id": "utility_power_failure",
+      "esphome_id": "utility_power_failure",
+      "unit": null,
+      "name": "Utility Power Failure",
+      "kind": "bin"
+    },
+    "water_level_switch": {
+      "object_id": "water_level_switch",
+      "esphome_id": "water_level_switch",
+      "unit": null,
+      "name": "Water Level Switch",
+      "kind": "bin"
+    }
+  },
+  "alarm_keys": [
+    "alternator_input_lost",
+    "battery_high_voltage",
+    "battery_low_voltage",
+    "common_shutdown",
+    "electrical_trip",
+    "emergency_stop",
+    "engine_failed_to_start",
+    "engine_failed_to_stop",
+    "engine_over_speed",
+    "engine_under_speed",
+    "exercising",
+    "extended_over_load_trip",
+    "fuel_cap_open_circuit",
+    "fuel_theft",
+    "gen_l1_phase_high_voltage",
+    "gen_l1_phase_low_voltage",
+    "gen_l2_phase_high_voltage",
+    "gen_l2_phase_low_voltage",
+    "gen_l3_phase_high_voltage",
+    "gen_l3_phase_low_voltage",
+    "general_notification",
+    "general_warning",
+    "generator_failed_to_start",
+    "generator_high_current",
+    "generator_high_frequency",
+    "generator_low_frequency",
+    "generator_overload",
+    "high_coolant_temperature",
+    "high_oil_pressure_detected",
+    "high_voltage_warning_1__ph-ph_",
+    "high_voltage_warning_2__ph-ph_",
+    "high_voltage_warning__ph-ph_",
+    "low_fuel_level",
+    "low_oil_pressure",
+    "low_voltage_failure_1__ph-ph_",
+    "low_voltage_failure_2__ph-ph_",
+    "magnetic_pick_up_fault",
+    "maintenance_required",
+    "oil_pressure_open_circuit",
+    "scheduled_exercise_in_progress",
+    "temperature_circuit_open",
+    "unbalanced_load",
+    "water_level_switch"
+  ],
+  "liveness": {
+    "mqtt_availability_topic_suffix": "status",
+    "mqtt_health_key": "bus_healthy",
+    "mqtt_age_key": "bus_age_s",
+    "api_health_object_id": "bus_healthy",
+    "api_age_object_id": "bus_age",
+    "api_status_object_id": "bus_status"
+  },
+  "device": {
+    "project_name": "bbensten.b_infohub",
+    "zeroconf": "_esphomelib._tcp.local."
+  }
+}

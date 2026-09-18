@@ -239,6 +239,12 @@
       },
       "malfunction": {
         "name": "Malfunction"
+      },
+      "local_bridge_connected": {
+        "name": "Bridge reachable"
+      },
+      "local_bus_healthy": {
+        "name": "Generator bus healthy"
       }
     }
   }

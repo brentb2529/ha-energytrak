@@ -20,7 +20,10 @@ from .api import (
     EnergyTrakError,
 )
 from .const import (
+    CONF_LOCAL_HOST,
+    CONF_LOCAL_SITE_ID,
     CONF_SCAN_INTERVAL,
+    LOCAL_SITE_PREFIX,
     CONF_SITE_IDS,
     CONF_SITE_NAMES,
     CONF_STALE_MINUTES,
@@ -72,11 +75,42 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         self,
         hass: HomeAssistant,
         entry: ConfigEntry,
-        client: EnergyTrakClient,
+        client: EnergyTrakClient | None,
+        local: Any = None,
     ) -> None:
-        """Initialise the coordinator."""
+        """Initialise the coordinator.
+
+        Either half may be absent. `client` is None on a bridge-only install
+        (no EnergyTrak account at all); `local` is None on a cloud-only one,
+        which is nearly every existing user. At least one must be present --
+        async_setup_entry refuses the entry otherwise.
+        """
         self.client = client
-        self.site_ids: list[str] = list(entry.data.get(CONF_SITE_IDS, []))
+        # Optional LocalBridge. None on every cloud-only installation, which
+        # is almost all of them.
+        self.local = local
+        self._local_was_active: bool | None = None
+        # Replays the bridge's flash event log. Built lazily on first use so a
+        # cloud-only entry never imports the recorder statistics API.
+        self._drain: Any = None
+        # Sites that are actually fetched from EnergyTrak. Empty when there is
+        # no account -- the polling loop then simply has nothing to do, rather
+        # than needing a special case.
+        self.cloud_site_ids: list[str] = list(entry.data.get(CONF_SITE_IDS, []))
+        self.site_ids: list[str] = list(self.cloud_site_ids)
+
+        # Must come AFTER site_ids exists -- this reads and appends to it.
+        self.local_site_id: str | None = entry.data.get(CONF_LOCAL_SITE_ID)
+        if local is not None:
+            if self.local_site_id is None:
+                # A bridge with no cloud site to attach to IS the device.
+                self.local_site_id = (
+                    self.cloud_site_ids[0]
+                    if self.cloud_site_ids
+                    else f"{LOCAL_SITE_PREFIX}:{entry.data.get(CONF_LOCAL_HOST)}"
+                )
+            if self.local_site_id not in self.site_ids:
+                self.site_ids.append(self.local_site_id)
         site_names: dict[str, str] = entry.data.get(CONF_SITE_NAMES, {})
         self.sites: dict[str, SiteRuntime] = {
             site_id: SiteRuntime(site_name=site_names.get(site_id))
@@ -155,7 +189,7 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         errors: list[str] = []
         freshness_changed = False
 
-        for site_id in self.site_ids:
+        for site_id in self.cloud_site_ids:
             before = self.sites.get(site_id, SiteRuntime()).freshness
             try:
                 results[site_id] = await self._async_fetch_site(site_id)
@@ -173,8 +207,33 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                 errors.append(f"{site_id}: {err}")
                 _LOGGER.debug("Poll failed for site %s: %s", site_id, err)
 
+        # Recover anything the bridge logged while we could not see it. Done
+        # BEFORE the overlay so a fault that has since cleared is still filed
+        # under the time it actually happened, rather than being invisible
+        # because the current snapshot looks healthy.
+        await self._async_drain_backlog()
+
+        # Overlay the local bridge LAST, so it wins over the cloud for every
+        # field it carries -- but only for those fields. The cloud still owns
+        # serial number, location, subscription state, firmware status and the
+        # next scheduled exercise date, none of which exist on the Modbus bus.
+        # Merging rather than replacing is what keeps the device whole.
+        self._apply_local(results)
+
         if errors and not results:
             raise UpdateFailed("; ".join(errors))
+        if not results and self.client is None and self.local is not None:
+            # Bridge-only and nothing to serve. Fail ONLY when the bridge is
+            # unreachable.
+            #
+            # This used to fail whenever `snapshot()` returned None, which also
+            # covers "connected, but the RS-485 bus is quiet" -- and that is
+            # exactly backwards. A bridge with a dead bus is the case you most
+            # need to SEE: refusing to set up hides the very diagnostics that
+            # say the bus is dead, and leaves no device card at all. It cost a
+            # setup_retry loop on a bridge that was answering perfectly.
+            if not self.local.connected:
+                raise UpdateFailed(f"local bridge at {self.local.host} is unreachable")
 
         summary = "; ".join(errors) if errors else None
         if summary and summary != self._last_error:
@@ -195,6 +254,132 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             await self._async_save_freshness()
 
         return results
+
+    async def _async_drain_backlog(self) -> None:
+        """Pull the bridge's event log into events and statistics."""
+        if self.local is None or not self.local.connected:
+            return
+        if self._drain is None:
+            from .backlog import BacklogDrain
+            from .local_source import load_alarm_names
+
+            # Reading a file blocks; Home Assistant will not tolerate that on
+            # the event loop and raises rather than merely warning.
+            names = await self.hass.async_add_executor_job(load_alarm_names)
+            site_id = self.local_site_id or (
+                self.cloud_site_ids[0] if self.cloud_site_ids else None
+            )
+            # An EXTERNAL statistic id: "<domain>:<object_id>". Deliberately
+            # not tied to an entity -- binary sensors cannot carry statistics,
+            # and the numeric alarm-count sensor does not exist while the bus
+            # is down, which is precisely when this history matters.
+            obj = "".join(
+                ch if ch.isalnum() else "_" for ch in (site_id or "bridge")
+            ).lower().strip("_")
+            count_eid = f"{DOMAIN}:{obj}_recovered_alarms"
+            self._drain = BacklogDrain(self.hass, self.local, names, count_eid)
+        try:
+            await self._drain.async_drain()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Backlog drain failed: %s", err)
+
+    def _apply_local(self, results: dict[str, dict[str, Any]]) -> None:
+        """Overlay live bridge readings onto one site's cloud payload."""
+        if self.local is None:
+            return
+
+        site_id = self.local_site_id
+        if site_id is None:
+            return
+
+        snapshot = self.local.snapshot()
+        active = snapshot is not None
+
+        # Connected but not trusted (bus quiet). With no cloud underneath there
+        # would otherwise be no device at all, so publish identity and health
+        # and let the bus diagnostics tell the story.
+        if not active and self.client is None and self.local.connected:
+            payload = results.setdefault(site_id, {})
+            for field, value in self.local.device_identity().items():
+                if value is not None:
+                    payload.setdefault(field, value)
+            payload["monitor_online"] = True
+            payload["telemetry_source"] = "local"
+            payload["local_bus_age_seconds"] = self.local.bus_age
+
+        # Log the transition, not the state. A bridge that has been offline for
+        # a month should not say so every thirty seconds.
+        if active != self._local_was_active:
+            if active:
+                _LOGGER.info(
+                    "Local B-Infohub bridge is now the source for site %s "
+                    "(%d fields, cloud still polled underneath)",
+                    site_id,
+                    len(snapshot),
+                )
+            elif self._local_was_active is not None:
+                _LOGGER.warning(
+                    "Local B-Infohub bridge is no longer usable (connected=%s, "
+                    "bus_healthy=%s); falling back to EnergyTrak cloud data",
+                    self.local.connected,
+                    self.local.bus_healthy,
+                )
+            self._local_was_active = active
+
+        payload = results.get(site_id)
+        if payload is None:
+            # No cloud payload for this site -- either bridge-only, or the
+            # account has never polled successfully.
+            # Cloud has never succeeded for this site. Local alone is still a
+            # working generator readout, so serve it rather than nothing.
+            if active:
+                payload = dict(snapshot)
+                for field, value in self.local.device_identity().items():
+                    if value is not None:
+                        payload.setdefault(field, value)
+                results[site_id] = payload
+                self._stamp_bridge(payload)
+            return
+
+        if active:
+            payload.update(snapshot)
+            # Identity fills blanks only -- see LocalBridge.device_identity.
+            for field, value in self.local.device_identity().items():
+                if value is not None and payload.get(field) is None:
+                    payload[field] = value
+        elif self.client is not None:
+            # Only claim "cloud" when there IS a cloud. On a bridge-only entry
+            # the source is still local -- it is simply not delivering, which
+            # is what bus_healthy and bus_age are there to say. Reporting
+            # "cloud" for a site with no account was just wrong.
+            payload["telemetry_source"] = "cloud"
+            payload["local_bus_age_seconds"] = None
+
+        self._stamp_bridge(payload)
+
+    def _stamp_bridge(self, payload: dict[str, Any]) -> None:
+        """Record WHICH bridge this entry watches, in every code path.
+
+        "local" on its own does not answer the question you actually ask when a
+        reading looks wrong, which is *which box produced this*. With more than
+        one bridge on a site, or after one has been swapped, a source label with
+        no address is not traceable to hardware.
+
+        Stamped even while the source is cloud, and even while the bridge is
+        unreachable: "the bridge we are NOT using is at 192.168.1.62" is exactly
+        what you need in order to go and look at it. A field that disappears in
+        the failure case is useless for diagnosing the failure case.
+
+        Called from both exits of _apply_local -- the bridge-only path returns
+        early, and that is the install shape with no cloud fallback, so it is
+        the one that can least afford to be missing this.
+        """
+        if self.local is None:
+            return
+        payload["local_bridge_host"] = self.local.host
+        payload["local_bridge_port"] = self.local.port
+        payload["local_bridge_connected"] = self.local.connected
+        payload["local_bus_healthy"] = self.local.bus_healthy
 
     async def _async_fetch_site(self, site_id: str) -> dict[str, Any]:
         """Read one site and all of its devices, normalised into one payload."""

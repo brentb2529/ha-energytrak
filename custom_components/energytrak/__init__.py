@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from homeassistant.components.http import StaticPathConfig
@@ -15,12 +16,18 @@ from .api import EnergyTrakAuthError, EnergyTrakClient, EnergyTrakError
 from .const import (
     CONF_API_KEY,
     CONF_EMAIL,
+    CONF_LOCAL_HOST,
+    CONF_LOCAL_KEY,
+    CONF_LOCAL_PORT,
     CONF_REFRESH_TOKEN,
+    DEFAULT_LOCAL_PORT,
     DOMAIN,
     IMAGE_DIR,
     IMAGE_URL_BASE,
 )
 from .coordinator import EnergyTrakCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
@@ -48,23 +55,59 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnergyTrakConfigEntry) -
     """Set up EnergyTrak from a config entry."""
     await _async_register_images(hass)
 
-    client = EnergyTrakClient(
-        async_get_clientsession(hass),
-        entry.data[CONF_EMAIL],
-        api_key=entry.data[CONF_API_KEY],
-        refresh_token=entry.data[CONF_REFRESH_TOKEN],
-    )
+    # An entry may configure the cloud account, a local bridge, or both. Only
+    # build and authenticate the cloud client when there is an account -- a
+    # bridge-only user has no EnergyTrak credentials and never will.
+    client = None
+    if entry.data.get(CONF_EMAIL):
+        client = EnergyTrakClient(
+            async_get_clientsession(hass),
+            entry.data[CONF_EMAIL],
+            api_key=entry.data[CONF_API_KEY],
+            refresh_token=entry.data[CONF_REFRESH_TOKEN],
+        )
 
-    try:
-        await client.async_get_token()
-    except EnergyTrakAuthError as err:
-        raise ConfigEntryAuthFailed(
-            f"EnergyTrak credentials are no longer valid: {err}"
-        ) from err
-    except EnergyTrakError as err:
-        raise ConfigEntryNotReady(f"Could not reach EnergyTrak: {err}") from err
+        try:
+            await client.async_get_token()
+        except EnergyTrakAuthError as err:
+            raise ConfigEntryAuthFailed(
+                f"EnergyTrak credentials are no longer valid: {err}"
+            ) from err
+        except EnergyTrakError as err:
+            raise ConfigEntryNotReady(f"Could not reach EnergyTrak: {err}") from err
 
-    coordinator = EnergyTrakCoordinator(hass, entry, client)
+    # Optional local bridge. Started BEFORE the first refresh so that a site
+    # whose cloud feed is dormant still has live values on the very first
+    # update, rather than a screen of "unknown" until the next poll.
+    local = None
+    if host := entry.data.get(CONF_LOCAL_HOST):
+        from .local_source import LocalBridge
+
+        local = LocalBridge(
+            hass,
+            host,
+            entry.data.get(CONF_LOCAL_PORT, DEFAULT_LOCAL_PORT),
+            entry.data.get(CONF_LOCAL_KEY),
+        )
+        try:
+            await local.async_start()
+        except Exception as err:  # noqa: BLE001
+            # A missing bridge must never block the cloud path -- that would
+            # turn an optional accessory into a hard dependency.
+            _LOGGER.warning("Local B-Infohub bridge at %s did not start: %s", host, err)
+            local = None
+        else:
+            entry.async_on_unload(local.async_stop)
+
+    if client is None and local is None:
+        # Neither half survived setup. With a cloud account this would have
+        # raised above; here it means a bridge-only entry whose bridge did not
+        # start, which is a retry, not a broken configuration.
+        raise ConfigEntryNotReady(
+            "No EnergyTrak account configured and the local bridge is unreachable"
+        )
+
+    coordinator = EnergyTrakCoordinator(hass, entry, client, local=local)
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = coordinator

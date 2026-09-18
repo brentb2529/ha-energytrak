@@ -12,6 +12,16 @@
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/brentb2529/ha-energytrak/issues",
-  "requirements": [],
-  "version": "1.12.1"
+  "requirements": [
+    "aioesphomeapi>=24.0.0"
+  ],
+  "version": "1.13.0",
+  "zeroconf": [
+    {
+      "type": "_esphomelib._tcp.local.",
+      "properties": {
+        "project_name": "bbensten.b_infohub"
+      }
+    }
+  ]
 }
