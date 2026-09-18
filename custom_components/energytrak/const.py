@@ -15,6 +15,36 @@ CONF_SITE_IDS: Final = "site_ids"
 CONF_SITE_NAMES: Final = "site_names"
 CONF_MANUAL_SITE_IDS: Final = "manual_site_ids"
 
+# Local B-Infohub bridge (optional; almost no installation has one).
+# Stored in entry.data rather than options because the host and key are
+# identity, not preference -- changing them means a different device.
+CONF_LOCAL_HOST: Final = "local_host"
+CONF_LOCAL_PORT: Final = "local_port"
+CONF_LOCAL_KEY: Final = "local_encryption_key"
+CONF_LOCAL_SITE_ID: Final = "local_site_id"
+DEFAULT_LOCAL_PORT: Final = 6053
+
+# A local-only installation has no EnergyTrak account and therefore no site id,
+# but every device, entity and unique_id in this integration is keyed by one.
+# Rather than thread "or None" through all of that, a bridge-only entry gets a
+# synthetic site id derived from its host. Opaque strings all the way down, so
+# nothing else needs to know the difference.
+LOCAL_SITE_PREFIX: Final = "bridge"
+
+# Which halves of the integration an entry has configured. An entry may be
+# cloud-only, bridge-only, or both -- all three are first-class.
+CONF_HAS_CLOUD: Final = "has_cloud"
+
+# Form-only, never persisted: which existing account entry a manually
+# added bridge should join, or STANDALONE for none.
+CONF_ATTACH_TO_ENTRY: Final = "attach_to_entry"
+STANDALONE: Final = "__standalone__"
+
+# The bridge advertises this in its mDNS TXT record. Discovery is filtered on
+# it so this integration only ever offers to adopt a B-Infohub, never somebody
+# else's ESPHome doorbell.
+LOCAL_PROJECT_NAME: Final = "bbensten.b_infohub"
+
 # Options
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_STALE_MINUTES: Final = "stale_minutes"

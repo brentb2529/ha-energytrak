@@ -134,9 +134,22 @@ async def async_setup_entry(
 ) -> None:
     """Set up the EnergyTrak binary sensors."""
     coordinator = entry.runtime_data
+
+    # Imported here rather than at module scope: local_entities imports the
+    # description class from THIS module, so a top-level import would be
+    # circular. By the time this function runs the module is fully loaded.
+    from .local_entities import LOCAL_BINARY_SENSORS
+    from .local_status import LOCAL_STATUS_BINARY_SENSORS
+
+    # Concatenated unconditionally and safely. async_setup_reported_entities
+    # only creates entities for fields the coordinator actually reports, so on
+    # a cloud-only installation -- which is nearly all of them -- not one of
+    # these local descriptions produces an entity.
+    descriptions = BINARY_SENSORS + LOCAL_BINARY_SENSORS + LOCAL_STATUS_BINARY_SENSORS
+
     entry.async_on_unload(
         async_setup_reported_entities(
-            coordinator, BINARY_SENSORS, EnergyTrakBinarySensor, async_add_entities
+            coordinator, descriptions, EnergyTrakBinarySensor, async_add_entities
         )
     )
 

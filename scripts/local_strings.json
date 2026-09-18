@@ -1,0 +1,302 @@
+{
+  "alarm_register_1": {
+    "name": "Alarm Register 1"
+  },
+  "alarm_register_10": {
+    "name": "Alarm Register 10"
+  },
+  "alarm_register_11": {
+    "name": "Alarm Register 11"
+  },
+  "alarm_register_12": {
+    "name": "Alarm Register 12"
+  },
+  "alarm_register_13": {
+    "name": "Alarm Register 13"
+  },
+  "alarm_register_14": {
+    "name": "Alarm Register 14"
+  },
+  "alarm_register_15": {
+    "name": "Alarm Register 15"
+  },
+  "alarm_register_2": {
+    "name": "Alarm Register 2"
+  },
+  "alarm_register_3": {
+    "name": "Alarm Register 3"
+  },
+  "alarm_register_4": {
+    "name": "Alarm Register 4"
+  },
+  "alarm_register_5": {
+    "name": "Alarm Register 5"
+  },
+  "alarm_register_6": {
+    "name": "Alarm Register 6"
+  },
+  "alarm_register_7": {
+    "name": "Alarm Register 7"
+  },
+  "alarm_register_8": {
+    "name": "Alarm Register 8"
+  },
+  "alarm_register_9": {
+    "name": "Alarm Register 9"
+  },
+  "alternator_input_lost": {
+    "name": "Alternator Input Lost"
+  },
+  "auxiliary_input_a": {
+    "name": "Auxiliary Input A"
+  },
+  "auxiliary_input_b": {
+    "name": "Auxiliary Input B"
+  },
+  "auxiliary_input_c": {
+    "name": "Auxiliary Input C"
+  },
+  "auxiliary_input_d": {
+    "name": "Auxiliary Input D"
+  },
+  "auxiliary_input_e": {
+    "name": "Auxiliary Input E"
+  },
+  "auxiliary_input_f": {
+    "name": "Auxiliary Input F"
+  },
+  "auxiliary_input_g": {
+    "name": "Auxiliary Input G"
+  },
+  "auxiliary_input_h": {
+    "name": "Auxiliary Input H"
+  },
+  "auxiliary_input_i": {
+    "name": "Auxiliary Input I"
+  },
+  "battery_high_voltage": {
+    "name": "Battery High Voltage"
+  },
+  "battery_low_voltage": {
+    "name": "Battery Low Voltage"
+  },
+  "bus_witness": {
+    "name": "bus_witness"
+  },
+  "coolant_temperature": {
+    "name": "Coolant Temperature"
+  },
+  "cumulative_apparent_energy": {
+    "name": "Cumulative Apparent Energy"
+  },
+  "cumulative_energy": {
+    "name": "Cumulative Energy"
+  },
+  "cumulative_reactive_energy": {
+    "name": "Cumulative Reactive Energy"
+  },
+  "dg_phase_rotation": {
+    "name": "DG Phase Rotation"
+  },
+  "electrical_trip": {
+    "name": "Electrical Trip"
+  },
+  "emergency_stop": {
+    "name": "Emergency Stop"
+  },
+  "engine_failed_to_start": {
+    "name": "Engine Failed to Start"
+  },
+  "engine_failed_to_stop": {
+    "name": "Engine Failed to Stop"
+  },
+  "engine_over_speed": {
+    "name": "Engine Over Speed"
+  },
+  "engine_running": {
+    "name": "Engine Running"
+  },
+  "engine_starting": {
+    "name": "Engine Starting"
+  },
+  "engine_under_speed": {
+    "name": "Engine Under Speed"
+  },
+  "exercising": {
+    "name": "Exercising"
+  },
+  "extended_over_load_trip": {
+    "name": "Extended Over Load Trip"
+  },
+  "fuel_cap_open_circuit": {
+    "name": "Fuel Cap Open Circuit"
+  },
+  "fuel_level": {
+    "name": "Fuel Level"
+  },
+  "fuel_theft": {
+    "name": "Fuel Theft"
+  },
+  "fuel_volume": {
+    "name": "Fuel Volume"
+  },
+  "gen_l1_phase_high_voltage": {
+    "name": "Gen L1 Phase High Voltage"
+  },
+  "gen_l1_phase_low_voltage": {
+    "name": "Gen L1 Phase Low Voltage"
+  },
+  "gen_l2_phase_high_voltage": {
+    "name": "Gen L2 Phase High Voltage"
+  },
+  "gen_l2_phase_low_voltage": {
+    "name": "Gen L2 Phase Low Voltage"
+  },
+  "gen_l3_phase_high_voltage": {
+    "name": "Gen L3 Phase High Voltage"
+  },
+  "gen_l3_phase_low_voltage": {
+    "name": "Gen L3 Phase Low Voltage"
+  },
+  "general_notification": {
+    "name": "General Notification"
+  },
+  "general_warning": {
+    "name": "General Warning"
+  },
+  "generator_failed_to_start": {
+    "name": "Generator Failed to Start"
+  },
+  "generator_high_current": {
+    "name": "Generator High Current"
+  },
+  "generator_high_frequency": {
+    "name": "Generator High Frequency"
+  },
+  "generator_l1-l2_voltage": {
+    "name": "Generator L1-L2 Voltage"
+  },
+  "generator_l2-l3_voltage": {
+    "name": "Generator L2-L3 Voltage"
+  },
+  "generator_l2_frequency": {
+    "name": "Generator L2 Frequency"
+  },
+  "generator_l3-l1_voltage": {
+    "name": "Generator L3-L1 Voltage"
+  },
+  "generator_l3_current": {
+    "name": "Generator L3 Current"
+  },
+  "generator_l3_frequency": {
+    "name": "Generator L3 Frequency"
+  },
+  "generator_l3_voltage": {
+    "name": "Generator L3 Voltage"
+  },
+  "generator_low_frequency": {
+    "name": "Generator Low Frequency"
+  },
+  "generator_overload": {
+    "name": "Generator Overload"
+  },
+  "high_coolant_temperature": {
+    "name": "High Coolant Temperature"
+  },
+  "high_oil_pressure_detected": {
+    "name": "High Oil Pressure Detected"
+  },
+  "high_voltage_warning_1__ph-ph_": {
+    "name": "High Voltage Warning 1 (Ph-Ph)"
+  },
+  "high_voltage_warning_2__ph-ph_": {
+    "name": "High Voltage Warning 2 (Ph-Ph)"
+  },
+  "high_voltage_warning__ph-ph_": {
+    "name": "High Voltage Warning (Ph-Ph)"
+  },
+  "l3_apparent_power": {
+    "name": "L3 Apparent Power"
+  },
+  "l3_power": {
+    "name": "L3 Power"
+  },
+  "l3_power_factor": {
+    "name": "L3 Power Factor"
+  },
+  "l3_reactive_power": {
+    "name": "L3 Reactive Power"
+  },
+  "low_fuel_level": {
+    "name": "Low Fuel Level"
+  },
+  "low_oil_pressure": {
+    "name": "Low Oil Pressure"
+  },
+  "low_voltage_failure_1__ph-ph_": {
+    "name": "Low Voltage Failure 1 (Ph-Ph)"
+  },
+  "low_voltage_failure_2__ph-ph_": {
+    "name": "Low Voltage Failure 2 (Ph-Ph)"
+  },
+  "magnetic_pick_up_fault": {
+    "name": "Magnetic Pick Up Fault"
+  },
+  "mains_phase_rotation": {
+    "name": "Mains Phase Rotation"
+  },
+  "maintenance_required": {
+    "name": "Maintenance Required"
+  },
+  "oil_pressure": {
+    "name": "Oil Pressure"
+  },
+  "oil_pressure_open_circuit": {
+    "name": "Oil Pressure Open Circuit"
+  },
+  "percentage_load": {
+    "name": "Percentage Load"
+  },
+  "power_status": {
+    "name": "Power Status"
+  },
+  "scheduled_exercise_in_progress": {
+    "name": "Scheduled Exercise in Progress"
+  },
+  "status_register": {
+    "name": "Status Register"
+  },
+  "temperature_circuit_open": {
+    "name": "Temperature Circuit Open"
+  },
+  "unbalanced_load": {
+    "name": "Unbalanced Load"
+  },
+  "utility_l1-l2_voltage": {
+    "name": "Utility L1-L2 Voltage"
+  },
+  "utility_l2-l3_voltage": {
+    "name": "Utility L2-L3 Voltage"
+  },
+  "utility_l2_frequency": {
+    "name": "Utility L2 Frequency"
+  },
+  "utility_l2_voltage": {
+    "name": "Utility L2 Voltage"
+  },
+  "utility_l3-l1_voltage": {
+    "name": "Utility L3-L1 Voltage"
+  },
+  "utility_l3_frequency": {
+    "name": "Utility L3 Frequency"
+  },
+  "utility_l3_voltage": {
+    "name": "Utility L3 Voltage"
+  },
+  "utility_power_failure": {
+    "name": "Utility Power Failure"
+  },
+  "water_level_switch": {
+    "name": "Water Level Switch"
+  }
+}
