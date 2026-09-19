@@ -560,7 +560,6 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="exercising",
         translation_key="exercising",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("exercising"),
     ),
     EnergyTrakBinarySensorDescription(
@@ -731,7 +730,6 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
     EnergyTrakBinarySensorDescription(
         key="scheduled_exercise_in_progress",
         translation_key="scheduled_exercise_in_progress",
-        device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("scheduled_exercise_in_progress"),
     ),
     EnergyTrakBinarySensorDescription(

@@ -882,7 +882,6 @@
     "engine_failed_to_stop",
     "engine_over_speed",
     "engine_under_speed",
-    "exercising",
     "gen_l1_phase_high_voltage",
     "gen_l1_phase_low_voltage",
     "gen_l2_phase_high_voltage",
@@ -903,7 +902,6 @@
     "low_voltage_failure_1__ph-ph_",
     "low_voltage_failure_2__ph-ph_",
     "magnetic_pick_up_fault",
-    "scheduled_exercise_in_progress",
     "temperature_circuit_open",
     "unbalanced_load"
   ],
