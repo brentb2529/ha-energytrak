@@ -80,6 +80,18 @@
   "battery_low_voltage": {
     "name": "Battery Low Voltage"
   },
+  "boot_partition": {
+    "name": "Boot Partition"
+  },
+  "bus_reads_missed": {
+    "name": "Bus Reads Missed"
+  },
+  "bus_reads_ok": {
+    "name": "Bus Reads OK"
+  },
+  "bus_success_rate": {
+    "name": "Bus Success Rate"
+  },
   "bus_witness": {
     "name": "bus_witness"
   },
@@ -134,11 +146,23 @@
   "esp_internal_temperature": {
     "name": "ESP Internal Temperature"
   },
+  "event_log_cursor": {
+    "name": "Event Log Cursor"
+  },
+  "event_log_pending": {
+    "name": "Event Log Pending"
+  },
+  "event_log_records": {
+    "name": "Event Log Records"
+  },
   "exercising": {
     "name": "Exercising"
   },
   "extended_over_load_trip": {
     "name": "Extended Over Load Trip"
+  },
+  "free_heap": {
+    "name": "Free Heap"
   },
   "fuel_cap_open_circuit": {
     "name": "Fuel Cap Open Circuit"
@@ -238,6 +262,15 @@
   },
   "l3_reactive_power": {
     "name": "L3 Reactive Power"
+  },
+  "largest_free_block": {
+    "name": "Largest Free Block"
+  },
+  "last_reset_reason": {
+    "name": "Last Reset Reason"
+  },
+  "loop_time": {
+    "name": "Loop Time"
   },
   "low_fuel_level": {
     "name": "Low Fuel Level"

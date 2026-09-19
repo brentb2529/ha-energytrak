@@ -5,7 +5,7 @@ bridge. The EnergyTrak cloud has never carried any of these; they appear
 only while the bridge is reachable, which is why every one of them is
 created through async_setup_reported_entities rather than unconditionally.
 
-Source contract: schema 1, 107 local-only keys.
+Source contract: schema 1, 118 local-only keys.
 """
 from __future__ import annotations
 
@@ -165,6 +165,30 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("status_register"),
     ),
     EnergyTrakSensorDescription(
+        key="event_log_records",
+        translation_key="event_log_records",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+        value_fn=_key("event_log_records"),
+    ),
+    EnergyTrakSensorDescription(
+        key="event_log_cursor",
+        translation_key="event_log_cursor",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+        value_fn=_key("event_log_cursor"),
+    ),
+    EnergyTrakSensorDescription(
+        key="event_log_pending",
+        translation_key="event_log_pending",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+        value_fn=_key("event_log_pending"),
+    ),
+    EnergyTrakSensorDescription(
         key="uptime",
         translation_key="uptime",
         device_class=SensorDeviceClass.DURATION,
@@ -172,6 +196,30 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
         value_fn=_key("uptime"),
+    ),
+    EnergyTrakSensorDescription(
+        key="bus_reads_missed",
+        translation_key="bus_reads_missed",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+        value_fn=_key("bus_reads_missed"),
+    ),
+    EnergyTrakSensorDescription(
+        key="bus_reads_ok",
+        translation_key="bus_reads_ok",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+        value_fn=_key("bus_reads_ok"),
+    ),
+    EnergyTrakSensorDescription(
+        key="bus_success_rate",
+        translation_key="bus_success_rate",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=_key("bus_success_rate"),
     ),
     EnergyTrakSensorDescription(
         key="bus_witness",
@@ -241,6 +289,14 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         value_fn=_key("esp_internal_temperature"),
+    ),
+    EnergyTrakSensorDescription(
+        key="free_heap",
+        translation_key="free_heap",
+        native_unit_of_measurement="B",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_key("free_heap"),
     ),
     EnergyTrakSensorDescription(
         key="fuel_level",
@@ -323,6 +379,14 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("generator_l3_voltage"),
     ),
     EnergyTrakSensorDescription(
+        key="largest_free_block",
+        translation_key="largest_free_block",
+        native_unit_of_measurement="B",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_key("largest_free_block"),
+    ),
+    EnergyTrakSensorDescription(
         key="l3_apparent_power",
         translation_key="l3_apparent_power",
         device_class=SensorDeviceClass.APPARENT_POWER,
@@ -356,6 +420,14 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_fn=_key("l3_reactive_power"),
+    ),
+    EnergyTrakSensorDescription(
+        key="loop_time",
+        translation_key="loop_time",
+        native_unit_of_measurement="ms",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_key("loop_time"),
     ),
     EnergyTrakSensorDescription(
         key="oil_pressure",
@@ -446,10 +518,22 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("wi-fi_signal"),
     ),
     EnergyTrakSensorDescription(
+        key="boot_partition",
+        translation_key="boot_partition",
+        entity_registry_enabled_default=False,
+        value_fn=_key("boot_partition"),
+    ),
+    EnergyTrakSensorDescription(
         key="controller_time",
         translation_key="controller_time",
         entity_registry_enabled_default=False,
         value_fn=_key("controller_time"),
+    ),
+    EnergyTrakSensorDescription(
+        key="last_reset_reason",
+        translation_key="last_reset_reason",
+        entity_registry_enabled_default=False,
+        value_fn=_key("last_reset_reason"),
     ),
     EnergyTrakSensorDescription(
         key="power_status",

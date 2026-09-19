@@ -332,6 +332,27 @@
       "name": "Auxiliary Input I",
       "kind": "bin"
     },
+    "event_log_records": {
+      "object_id": "event_log_records",
+      "esphome_id": "backlog_count",
+      "unit": null,
+      "name": "Event Log Records",
+      "kind": "num"
+    },
+    "event_log_cursor": {
+      "object_id": "event_log_cursor",
+      "esphome_id": "backlog_cursor",
+      "unit": null,
+      "name": "Event Log Cursor",
+      "kind": "num"
+    },
+    "event_log_pending": {
+      "object_id": "event_log_pending",
+      "esphome_id": "backlog_pending",
+      "unit": null,
+      "name": "Event Log Pending",
+      "kind": "num"
+    },
     "battery_high_voltage": {
       "object_id": "battery_high_voltage",
       "esphome_id": "battery_high_voltage",
@@ -346,11 +367,39 @@
       "name": "Battery Low Voltage",
       "kind": "bin"
     },
+    "boot_partition": {
+      "object_id": "boot_partition",
+      "esphome_id": "boot_partition",
+      "unit": null,
+      "name": "Boot Partition",
+      "kind": "txt"
+    },
     "uptime": {
       "object_id": "uptime",
       "esphome_id": "bridge_uptime",
       "unit": "s",
       "name": "Uptime",
+      "kind": "num"
+    },
+    "bus_reads_missed": {
+      "object_id": "bus_reads_missed",
+      "esphome_id": "bus_reads_missed",
+      "unit": null,
+      "name": "Bus Reads Missed",
+      "kind": "num"
+    },
+    "bus_reads_ok": {
+      "object_id": "bus_reads_ok",
+      "esphome_id": "bus_reads_ok",
+      "unit": null,
+      "name": "Bus Reads OK",
+      "kind": "num"
+    },
+    "bus_success_rate": {
+      "object_id": "bus_success_rate",
+      "esphome_id": "bus_success_rate",
+      "unit": "%",
+      "name": "Bus Success Rate",
       "kind": "num"
     },
     "bus_witness": {
@@ -492,6 +541,13 @@
       "unit": null,
       "name": "Extended Over Load Trip",
       "kind": "bin"
+    },
+    "free_heap": {
+      "object_id": "free_heap",
+      "esphome_id": "free_heap",
+      "unit": "B",
+      "name": "Free Heap",
+      "kind": "num"
     },
     "fuel_cap_open_circuit": {
       "object_id": "fuel_cap_open_circuit",
@@ -661,6 +717,13 @@
       "name": "Generator Overload",
       "kind": "bin"
     },
+    "largest_free_block": {
+      "object_id": "largest_free_block",
+      "esphome_id": "heap_max_block",
+      "unit": "B",
+      "name": "Largest Free Block",
+      "kind": "num"
+    },
     "high_coolant_temperature": {
       "object_id": "high_coolant_temperature",
       "esphome_id": "high_coolant_temperature",
@@ -722,6 +785,20 @@
       "esphome_id": "l3_reactive_power",
       "unit": "kvar",
       "name": "L3 Reactive Power",
+      "kind": "num"
+    },
+    "last_reset_reason": {
+      "object_id": "last_reset_reason",
+      "esphome_id": "last_reset_reason",
+      "unit": null,
+      "name": "Last Reset Reason",
+      "kind": "txt"
+    },
+    "loop_time": {
+      "object_id": "loop_time",
+      "esphome_id": "loop_time",
+      "unit": "ms",
+      "name": "Loop Time",
       "kind": "num"
     },
     "low_fuel_level": {
