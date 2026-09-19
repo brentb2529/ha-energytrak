@@ -283,7 +283,7 @@ class LocalBridge:
                 # install there is no cloud site document to take a name from,
                 # so this is the only source of one.
                 self._device_info = await self._client.device_info()
-                entities, _services = await self._client.list_entities_services()
+                entities, services = await self._client.list_entities_services()
             except Exception as err:  # noqa: BLE001 - reconnect logic handles it
                 _LOGGER.debug("Local bridge list_entities failed: %s", err)
                 raise
@@ -294,6 +294,30 @@ class LocalBridge:
                     key = getattr(ent, "key", None)
                     if oid is not None and key is not None:
                         self._keys[key] = oid
+            # THIS LINE IS WHY EVERY ACKNOWLEDGEMENT SILENTLY FAILED.
+            #
+            # The services half of list_entities_services() was being bound to a
+            # local named `_services` -- the underscore that conventionally
+            # means "discard". self._services therefore stayed {} for the life
+            # of the connection, async_call() hit its `svc is None` guard and
+            # returned False every single time, and backlog_ack never once left
+            # the process.
+            #
+            # The symptom is nasty because nothing errors: the drain replays a
+            # batch, fails to acknowledge it, and replays the SAME batch on the
+            # next poll, forever. With alarms in that batch it is a critical
+            # notification every thirty seconds about an event that already
+            # finished. Seen in the field before it was seen in review.
+            self._services = {
+                svc.name: svc
+                for svc in (services or [])
+                if getattr(svc, "name", None)
+            }
+            _LOGGER.debug(
+                "Local bridge exposes %d action(s): %s",
+                len(self._services), ", ".join(sorted(self._services)) or "none",
+            )
+
             self._client.subscribe_states(self._on_state)
             self._connected = True
             _LOGGER.info(
