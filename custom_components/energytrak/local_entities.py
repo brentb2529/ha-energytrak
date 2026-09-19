@@ -5,7 +5,7 @@ bridge. The EnergyTrak cloud has never carried any of these; they appear
 only while the bridge is reachable, which is why every one of them is
 created through async_setup_reported_entities rather than unconditionally.
 
-Source contract: schema 1, 103 local-only keys.
+Source contract: schema 1, 104 local-only keys.
 """
 from __future__ import annotations
 
@@ -181,6 +181,15 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         value_fn=_key("bus_witness"),
+    ),
+    EnergyTrakSensorDescription(
+        key="controller_clock_age",
+        translation_key="controller_clock_age",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=_key("controller_clock_age"),
     ),
     EnergyTrakSensorDescription(
         key="coolant_temperature",

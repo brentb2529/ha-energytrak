@@ -352,6 +352,13 @@
       "name": "bus_witness",
       "kind": "num"
     },
+    "controller_clock_age": {
+      "object_id": "controller_clock_age",
+      "esphome_id": "controller_clock_age",
+      "unit": "s",
+      "name": "Controller Clock Age",
+      "kind": "num"
+    },
     "coolant_temperature": {
       "object_id": "coolant_temperature",
       "esphome_id": "coolant_temperature",
