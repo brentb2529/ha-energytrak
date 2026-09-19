@@ -367,6 +367,20 @@
       "name": "Controller Clock Age",
       "kind": "num"
     },
+    "controller_clock_skew": {
+      "object_id": "controller_clock_skew",
+      "esphome_id": "controller_clock_skew",
+      "unit": "min",
+      "name": "Controller Clock Skew",
+      "kind": "num"
+    },
+    "controller_time": {
+      "object_id": "controller_time",
+      "esphome_id": "controller_time",
+      "unit": null,
+      "name": "Controller Time",
+      "kind": "txt"
+    },
     "coolant_temperature": {
       "object_id": "coolant_temperature",
       "esphome_id": "coolant_temperature",
@@ -793,6 +807,13 @@
       "unit": null,
       "name": "Scheduled Exercise in Progress",
       "kind": "bin"
+    },
+    "status_register_raw": {
+      "object_id": "status_register_raw",
+      "esphome_id": "status_register_raw",
+      "unit": null,
+      "name": "Status Register Raw",
+      "kind": "txt"
     },
     "temperature_circuit_open": {
       "object_id": "temperature_circuit_open",

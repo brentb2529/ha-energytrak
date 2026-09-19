@@ -5,7 +5,7 @@ bridge. The EnergyTrak cloud has never carried any of these; they appear
 only while the bridge is reachable, which is why every one of them is
 created through async_setup_reported_entities rather than unconditionally.
 
-Source contract: schema 1, 104 local-only keys.
+Source contract: schema 1, 107 local-only keys.
 """
 from __future__ import annotations
 
@@ -190,6 +190,14 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
         value_fn=_key("controller_clock_age"),
+    ),
+    EnergyTrakSensorDescription(
+        key="controller_clock_skew",
+        translation_key="controller_clock_skew",
+        native_unit_of_measurement="min",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=_key("controller_clock_skew"),
     ),
     EnergyTrakSensorDescription(
         key="coolant_temperature",
@@ -436,6 +444,24 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         value_fn=_key("wi-fi_signal"),
+    ),
+    EnergyTrakSensorDescription(
+        key="controller_time",
+        translation_key="controller_time",
+        entity_registry_enabled_default=False,
+        value_fn=_key("controller_time"),
+    ),
+    EnergyTrakSensorDescription(
+        key="power_status",
+        translation_key="power_status",
+        entity_registry_enabled_default=False,
+        value_fn=_key("power_status"),
+    ),
+    EnergyTrakSensorDescription(
+        key="status_register_raw",
+        translation_key="status_register_raw",
+        entity_registry_enabled_default=False,
+        value_fn=_key("status_register_raw"),
     ),
 )
 

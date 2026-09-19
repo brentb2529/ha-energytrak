@@ -86,6 +86,12 @@
   "controller_clock_age": {
     "name": "Controller Clock Age"
   },
+  "controller_clock_skew": {
+    "name": "Controller Clock Skew"
+  },
+  "controller_time": {
+    "name": "Controller Time"
+  },
   "coolant_temperature": {
     "name": "Coolant Temperature"
   },
@@ -271,6 +277,9 @@
   },
   "status_register": {
     "name": "Status Register"
+  },
+  "status_register_raw": {
+    "name": "Status Register Raw"
   },
   "temperature_circuit_open": {
     "name": "Temperature Circuit Open"
