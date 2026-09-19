@@ -15,6 +15,14 @@
       "object_id": "engine_run_time",
       "kind": "num"
     },
+    "starts_count": {
+      "object_id": "number_of_starts",
+      "kind": "num"
+    },
+    "trips_count": {
+      "object_id": "number_of_trips",
+      "kind": "num"
+    },
     "generator_frequency": {
       "object_id": "generator_l1_frequency",
       "kind": "num"
