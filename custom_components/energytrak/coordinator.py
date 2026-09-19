@@ -64,6 +64,9 @@ class SiteRuntime:
     last_changed_at: datetime | None = None
     signature: tuple[Any, ...] | None = field(default=None, repr=False)
     freshness: EquipmentFreshness = field(default_factory=EquipmentFreshness)
+    # Scheduled-exercise start timestamps observed from the controller, newest
+    # last. Only a handful are kept; two is enough to learn the interval.
+    exercise_seen: list[str] = field(default_factory=list)
 
 
 class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -162,6 +165,11 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             runtime.freshness = EquipmentFreshness(
                 signature=record.get("signature"), seen_at=seen_at
             )
+            # Observed SCHEDULED exercise starts, newest last. Persisted for the
+            # same reason freshness is: the next observation may be a week away.
+            runtime.exercise_seen = [
+                str(x) for x in (record.get("exercise_seen") or [])
+            ][-4:]
 
     async def _async_save_freshness(self) -> None:
         """Persist the current signature/observation for every site."""
@@ -175,9 +183,10 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                             if runtime.freshness.seen_at
                             else None
                         ),
+                        "exercise_seen": runtime.exercise_seen,
                     }
                     for site_id, runtime in self.sites.items()
-                    if runtime.freshness.signature
+                    if runtime.freshness.signature or runtime.exercise_seen
                 }
             }
         )
@@ -340,6 +349,7 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                     if value is not None:
                         payload.setdefault(field, value)
                 results[site_id] = payload
+                self._derive_next_exercise(site_id, payload)
                 self._stamp_bridge(payload)
             return
 
@@ -357,6 +367,8 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             payload["telemetry_source"] = "cloud"
             payload["local_bus_age_seconds"] = None
 
+        if active:
+            self._derive_next_exercise(site_id, payload)
         self._stamp_bridge(payload)
 
     @callback
@@ -407,6 +419,67 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         if self._unsub_urgent is not None:
             self._unsub_urgent()
             self._unsub_urgent = None
+
+
+    def _derive_next_exercise(self, site_id: str, payload: dict[str, Any]) -> None:
+        """Compute the next scheduled exercise from the controller's own record.
+
+        THE CLOUD'S VALUE IS NOT SCHEDULE DATA. EnergyTrak publishes
+        `nextExerciseDue` as "the last time the set ran, plus an interval",
+        which is wrong the moment anyone runs the generator by hand. Measured
+        on a live system: a manual start at 12:51 EDT moved the cloud's next
+        exercise from Sunday to Sunday-plus-two-hours, while the machine's
+        actual weekly slot never moved.
+
+        The controller is better behaved. It stamps `last_exercise` ONLY for a
+        SCHEDULED run -- the same manual start left it untouched at Saturday
+        07:23 -- so the bridge is already reporting the one timestamp that
+        tracks the real schedule. The schedule itself is not readable: it lives
+        in the controller's parameter memory, genmon never found it, the vendor
+        manual publishes no register map, and a full FC03 sweep of 0x0001-0x00FF
+        returned silence.
+
+        So it is learned by watching instead. Each new scheduled start is
+        recorded; the gap between consecutive ones IS the interval, whether the
+        installer set weekly or monthly. Until a second one has been seen the
+        default is weekly, which is the factory setting and the common case.
+        """
+        raw = payload.get("last_exercise_at")
+        if not raw:
+            return
+        runtime = self.sites.setdefault(site_id, SiteRuntime())
+        stamp = str(raw)
+        if stamp not in runtime.exercise_seen:
+            runtime.exercise_seen = (runtime.exercise_seen + [stamp])[-4:]
+            _LOGGER.info(
+                "Recorded a scheduled exercise for site %s at %s (%d observed)",
+                site_id,
+                stamp,
+                len(runtime.exercise_seen),
+            )
+
+        try:
+            last = datetime.fromisoformat(stamp)
+        except ValueError:
+            return
+
+        interval = timedelta(days=7)
+        if len(runtime.exercise_seen) >= 2:
+            try:
+                prev = datetime.fromisoformat(runtime.exercise_seen[-2])
+                gap = last - prev
+                # Guard against a clock jump or a re-stamped value producing a
+                # nonsense interval; anything outside a day to ~5 weeks is not
+                # a schedule this controller can be set to.
+                if timedelta(hours=20) <= gap <= timedelta(days=36):
+                    interval = gap
+            except ValueError:
+                pass
+
+        payload["next_exercise_due"] = (last + interval).isoformat()
+        payload["exercise_interval_days"] = round(
+            interval.total_seconds() / 86400, 2
+        )
 
     def _stamp_bridge(self, payload: dict[str, Any]) -> None:
         """Record WHICH bridge this entry watches, in every code path.
