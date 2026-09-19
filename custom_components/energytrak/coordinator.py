@@ -431,6 +431,11 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         payload["local_bridge_port"] = self.local.port
         payload["local_bridge_connected"] = self.local.connected
         payload["local_bus_healthy"] = self.local.bus_healthy
+        # Seconds since the bridge last SAID anything, as opposed to seconds
+        # since the generator last answered the bridge. The two fail
+        # independently and only this one catches a bridge that has gone quiet
+        # while holding its socket open.
+        payload["local_rx_age_seconds"] = self.local.rx_age
 
     async def _async_fetch_site(self, site_id: str) -> dict[str, Any]:
         """Read one site and all of its devices, normalised into one payload."""

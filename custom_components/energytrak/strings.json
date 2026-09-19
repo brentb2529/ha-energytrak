@@ -316,6 +316,9 @@
       "local_bus_age_seconds": {
         "name": "Local bus age"
       },
+      "local_rx_age_seconds": {
+        "name": "Bridge silence"
+      },
       "monitor_state": {
         "name": "Monitor state"
       },

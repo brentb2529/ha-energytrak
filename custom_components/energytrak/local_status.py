@@ -37,6 +37,16 @@ LOCAL_STATUS_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         },
     ),
     EnergyTrakSensorDescription(
+        key="local_rx_age_seconds",
+        translation_key="local_rx_age_seconds",
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        device_class=SensorDeviceClass.DURATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("local_rx_age_seconds"),
+    ),
+    EnergyTrakSensorDescription(
         key="local_bus_age_seconds",
         translation_key="local_bus_age_seconds",
         native_unit_of_measurement=UnitOfTime.SECONDS,

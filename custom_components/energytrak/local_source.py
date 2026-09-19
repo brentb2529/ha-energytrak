@@ -51,6 +51,7 @@ import asyncio
 import inspect
 import json
 import logging
+from time import monotonic
 import pathlib
 from typing import Any, Callable
 
@@ -164,6 +165,10 @@ _URGENT_EXTRA: frozenset[str] = frozenset({
 # collapse a burst into one update.
 _URGENT_COALESCE_SECONDS = 0.35
 
+# How long the bridge may say nothing at all before its cached readings stop
+# being treated as current. See LocalBridge.available.
+RX_SILENCE_LIMIT = 120.0
+
 
 class LocalBridgeUnavailable(Exception):
     """Raised when the bridge cannot be reached or does not look like ours."""
@@ -208,6 +213,8 @@ class LocalBridge:
 
         # Fired the moment a significant reading CHANGES, rather than on the
         # coordinator's interval. See _URGENT_EXTRA and _on_state.
+        # Wall-clock of the last state message of ANY kind. See `available`.
+        self._last_rx: float = 0.0
         self._urgent_listeners: list[Callable[[], None]] = []
         self._urgent_oids: frozenset[str] = frozenset()
         self._urgent_timer: Any = None
@@ -410,6 +417,7 @@ class LocalBridge:
             return
         # missing_state means the device has the entity but no reading yet --
         # an unpopulated register, not a zero.
+        self._last_rx = monotonic()
         if getattr(state, "missing_state", False):
             if self._values.pop(oid, None) is not None and oid in self._urgent_oids:
                 self._schedule_urgent()
@@ -419,6 +427,7 @@ class LocalBridge:
         had = oid in self._values
         previous = self._values.get(oid)
         self._values[oid] = value
+        self._last_rx = monotonic()
 
         # Only on an actual CHANGE. ESPHome republishes on every poll of the
         # bus, so reacting to each message would wake the coordinator several
@@ -449,9 +458,50 @@ class LocalBridge:
         return float(value) if isinstance(value, (int, float)) else None
 
     @property
+    def rx_age(self) -> float | None:
+        """Seconds since ANY state message arrived, or None if none ever has."""
+        if not self._last_rx:
+            return None
+        return monotonic() - self._last_rx
+
+    @property
     def available(self) -> bool:
-        """True only in the one state where local data may be trusted."""
-        return self._connected and self.bus_healthy
+        """True only in the one state where local data may be trusted.
+
+        SILENCE MUST NOT COUNT AS GOOD DATA.
+
+        `connected` means a TCP socket is open, which is a much weaker claim
+        than it looks: a wedged ESP32 can hold the socket open while publishing
+        nothing, and every cached reading then sits in Home Assistant looking
+        like a healthy idle generator -- 0 kW, not running, no alarms. Nothing
+        about those values says "stale". `bus_healthy` does not save us either,
+        because it is itself a value FROM the bridge, so it freezes with
+        everything else.
+
+        So freshness is asserted the one way that cannot be faked: time since a
+        message of ANY kind last arrived. The bridge publishes continuously --
+        measured on this hardware, battery voltage alone lands 8 times a minute
+        and a poll cycle touches dozens of entities -- so RX_SILENCE_LIMIT of
+        two minutes is far outside normal and only reachable if the device has
+        genuinely stopped talking.
+
+        Deliberately counts MESSAGES, not value changes. Most readings on an
+        idle generator never change, and requiring change would declare a
+        perfectly healthy bus dead every time the machine sat still.
+        """
+        if not self._connected or not self.bus_healthy:
+            return False
+        age = self.rx_age
+        if age is None:
+            return False
+        if age > RX_SILENCE_LIMIT:
+            _LOGGER.warning(
+                "Local bridge at %s is connected but has sent nothing for %.0fs; "
+                "treating its data as stale rather than current",
+                self.host, age,
+            )
+            return False
+        return True
 
     def snapshot(self) -> dict[str, Any] | None:
         """Flat telemetry dict in normalize.py's shape, or None if untrusted.
