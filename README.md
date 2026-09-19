@@ -1,8 +1,17 @@
 # EnergyTrak for Home Assistant
 
-Home Assistant integration for **EnergyTrak**-connected standby generators
-(Briggs & Stratton / genmon cellular monitors). Everything runs inside Home
-Assistant — no extra hardware or bridge service.
+Home Assistant integration for Briggs & Stratton standby generators. It reads
+from the **EnergyTrak cloud**, from a **local RS-485 bridge**, or from both at
+once — and if you have both, it uses the bridge while it is healthy and falls
+back to the cloud when it is not, without you configuring anything.
+
+| | Cloud only | With a local bridge |
+| --- | --- | --- |
+| Readings | 34 | **130+** |
+| Freshness | minutes | **~1 second** |
+| Faults | one "fault" flag | **34 decoded alarms** |
+| Works without internet | no | **yes** |
+| Needs a subscription | yes | no |
 
 > [!WARNING]
 > **Unofficial, unsupported, and liable to break without notice.**
@@ -38,6 +47,16 @@ Manual install: copy `custom_components/energytrak` into your HA
 
 ## Setup
 
+Adding the integration offers a choice:
+
+- **EnergyTrak cloud account** — the original path, no hardware. Continue below.
+- **Local B-Infohub bridge** — an ESP32 on the generator's RS-485 port, no
+  subscription. See [Local bridge](#local-bridge).
+
+You can add the second one later from the same menu; they are not exclusive.
+
+### Cloud account
+
 EnergyTrak has no password login — it uses Firebase email magic links.
 
 1. In the EnergyTrak app or website, request a sign-in link for your account.
@@ -67,6 +86,69 @@ else's generator — add a second integration entry for that instead.
 The setup flow then lists the sites your account can see. If the list is empty
 (some accounts cannot enumerate the site collection), enter site IDs manually
 as a comma-separated list.
+
+## Local bridge
+
+The bridge is a small ESP32 board that plugs into the RS-485 port the generator
+controller already has and speaks Modbus to it directly. It is a separate
+project — **[B-Infohub](https://github.com/brentb2529/B-Infohub)** — with its
+own firmware, browser-based installer, and hardware you can build or order.
+
+**Adding it:** *Add Integration → EnergyTrak → Local B-Infohub bridge*. Enter
+its address and the API encryption key shown during its setup. If you already
+have a cloud account configured, the form offers to **add the bridge to it**
+rather than create a second entry — take that option. One entry means one
+device, one set of entity ids, and automatic fallback between the two sources.
+
+The bridge is discovered automatically when it is on the same subnet as Home
+Assistant. mDNS does not cross subnets, so on a routed or VLAN'd network — which
+is most installations where the generator sits on its own segment — add it by IP.
+
+### Which source is in use
+
+`sensor.<name>_telemetry_source` reads `local` or `cloud`, and carries the
+bridge's address as an attribute so a reading can be traced back to hardware.
+That attribute is present even while the source is cloud and even while the
+bridge is unreachable: "the bridge we are not using is at 192.168.1.62" is
+exactly what you need in order to go and look at it.
+
+### Shared readings keep the same entity
+
+Battery voltage, engine hours, voltages, frequency, speed and load exist in both
+sources and keep **the same entity id** whichever one produced them. Dashboards,
+automations and alert rules need no changes when the source switches. The
+readings the cloud has never carried — per-leg voltages, coolant, cumulative
+energy, and each alarm bit individually — appear as additional entities while
+the bridge is reporting.
+
+### Health, and why it is five entities and not one
+
+A monitor that fails silently is worse than no monitor, so the failure modes are
+kept apart rather than collapsed into "online":
+
+| Entity | Unhappy means |
+| --- | --- |
+| **Bridge reachable** | the board is not answering Home Assistant — power or Wi-Fi |
+| **Generator answering bus** | the board is fine; the generator went quiet on RS-485 |
+| **Controller clock age** | the controller answers but its clock stopped — it has hung |
+| **Bridge silence** | the board holds its connection but has stopped sending |
+| **Wi-Fi Signal** | below ~−72 dBm an ESP32 stays associated but is unreachable |
+
+They fail independently and each points somewhere different. The last three exist
+because of failures seen in the field, not in theory.
+
+Data is never trusted just because a connection is open: if the bridge says
+nothing at all for two minutes, its cached readings stop being treated as
+current and the cloud takes over. Silence does not count as good news.
+
+### Alarms that happen while Home Assistant is down
+
+The bridge writes every alarm transition to onboard flash the moment it happens.
+When Home Assistant returns, those records are replayed into the recorder as
+statistics **and** raised as an `energytrak_backlog_replayed` event carrying
+which alarms fired, when, and whether they are still active — so a fault that
+occurred *and cleared* during an outage is still reported rather than silently
+filed. This is the case cloud monitoring structurally cannot cover.
 
 ## Options
 
