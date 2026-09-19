@@ -48,9 +48,18 @@ LOCAL_PROJECT_NAME: Final = "bbensten.b_infohub"
 # Options
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_STALE_MINUTES: Final = "stale_minutes"
+# The exercise schedule, copied off the controller's AUTO EXERCISE screen.
+# It cannot be read over Modbus -- see coordinator._derive_next_exercise --
+# but it is three values that change roughly never, and knowing them makes the
+# next-exercise prediction correct immediately instead of after a full cycle.
+CONF_EXERCISE_DAY: Final = "exercise_day"
+CONF_EXERCISE_TIME: Final = "exercise_time"
 
 DEFAULT_SCAN_INTERVAL: Final = 30
 DEFAULT_STALE_MINUTES: Final = 15
+# Empty means "learn it by watching" rather than any particular day.
+DEFAULT_EXERCISE_DAY: Final = ""
+DEFAULT_EXERCISE_TIME: Final = ""
 
 # Storage for the observed equipment-liveness signature (see
 # normalize.EquipmentFreshness). Kept out of the config entry so it can be

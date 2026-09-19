@@ -56,9 +56,13 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SITE_IDS,
     CONF_SITE_NAMES,
+    CONF_EXERCISE_DAY,
+    CONF_EXERCISE_TIME,
     CONF_STALE_MINUTES,
     STANDALONE,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_EXERCISE_DAY,
+    DEFAULT_EXERCISE_TIME,
     DEFAULT_STALE_MINUTES,
     DOMAIN,
 )
@@ -705,6 +709,24 @@ class EnergyTrakOptionsFlow(OptionsFlow):
                         min=1, max=1440, step=1, mode=NumberSelectorMode.BOX
                     )
                 ),
+                # Straight off the controller's AUTO EXERCISE screen. Leave
+                # both blank to infer the schedule from observed runs instead.
+                vol.Optional(
+                    CONF_EXERCISE_DAY,
+                    default=options.get(CONF_EXERCISE_DAY, DEFAULT_EXERCISE_DAY),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=[
+                            "", "monday", "tuesday", "wednesday",
+                            "thursday", "friday", "saturday", "sunday",
+                        ],
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Optional(
+                    CONF_EXERCISE_TIME,
+                    default=options.get(CONF_EXERCISE_TIME, DEFAULT_EXERCISE_TIME),
+                ): TextSelector(),
             }
         )
         return self.async_show_form(

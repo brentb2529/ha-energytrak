@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -22,6 +23,8 @@ from .api import (
 from .const import (
     CONF_LOCAL_HOST,
     CONF_LOCAL_SITE_ID,
+    CONF_EXERCISE_DAY,
+    CONF_EXERCISE_TIME,
     CONF_SCAN_INTERVAL,
     LOCAL_SITE_PREFIX,
     CONF_SITE_IDS,
@@ -67,6 +70,38 @@ class SiteRuntime:
     # Scheduled-exercise start timestamps observed from the controller, newest
     # last. Only a handful are kept; two is enough to learn the interval.
     exercise_seen: list[str] = field(default_factory=list)
+
+
+
+def _next_weekday_at(hass: HomeAssistant, day: str, clock: str) -> datetime | None:
+    """The next occurrence of e.g. saturday 09:30 in the user's own timezone.
+
+    Local time, deliberately: the controller runs its schedule against a wall
+    clock on the side of a house, so "Saturday 09:30" means Saturday 09:30
+    there. Computing it in UTC would drift by an hour twice a year.
+    """
+    names = [
+        "monday", "tuesday", "wednesday",
+        "thursday", "friday", "saturday", "sunday",
+    ]
+    if day not in names:
+        return None
+    try:
+        hh, _, mm = clock.partition(":")
+        hour, minute = int(hh), int(mm or 0)
+    except ValueError:
+        return None
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+
+    tz = dt_util.get_time_zone(hass.config.time_zone) or dt_util.UTC
+    now = dt_util.utcnow().astimezone(tz)
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    ahead = (names.index(day) - target.weekday()) % 7
+    target += timedelta(days=ahead)
+    if target <= now:
+        target += timedelta(days=7)
+    return target.astimezone(dt_util.UTC)
 
 
 class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -444,6 +479,27 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         installer set weekly or monthly. Until a second one has been seen the
         default is weekly, which is the factory setting and the common case.
         """
+        # THE CONFIGURED SCHEDULE WINS WHEN IT IS KNOWN.
+        #
+        # Inference needs a full cycle to be right, and is wrong in exactly the
+        # situation that prompted it: after the controller's clock was
+        # corrected. The observed run had ENDED at 11:23 local while its clock
+        # was 94 minutes slow, so inference would have predicted 11:03 next
+        # Saturday for a machine now correctly set to start at 09:30 -- nearly
+        # two hours out, and it would have stayed wrong for a week.
+        #
+        # The schedule is three values off the controller's AUTO EXERCISE
+        # screen that change roughly never. Reading them once beats inferring
+        # them forever.
+        day = str(self.config_entry.options.get(CONF_EXERCISE_DAY, "") or "").lower()
+        clock = str(self.config_entry.options.get(CONF_EXERCISE_TIME, "") or "").strip()
+        if day and clock:
+            scheduled = _next_weekday_at(self.hass, day, clock)
+            if scheduled is not None:
+                payload["next_exercise_due"] = scheduled.isoformat()
+                payload["exercise_interval_days"] = 7.0
+                return
+
         raw = payload.get("last_exercise_at")
         if not raw:
             return
@@ -476,7 +532,18 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             except ValueError:
                 pass
 
-        payload["next_exercise_due"] = (last + interval).isoformat()
+        # last_exercise_at is stamped when the run ENDS -- it mirrors the
+        # cloud's `finishedAt`, and the firmware sets it on the falling edge of
+        # the exercise bit. A schedule fires at a START time, so the duration
+        # has to come back off or every prediction drifts late by one run
+        # length (about 20 minutes here).
+        duration = payload.get("last_exercise_duration_seconds")
+        try:
+            started = last - timedelta(seconds=float(duration)) if duration else last
+        except (TypeError, ValueError):
+            started = last
+
+        payload["next_exercise_due"] = (started + interval).isoformat()
         payload["exercise_interval_days"] = round(
             interval.total_seconds() / 86400, 2
         )
