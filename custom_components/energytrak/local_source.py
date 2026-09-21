@@ -170,6 +170,16 @@ _URGENT_COALESCE_SECONDS = 0.35
 RX_SILENCE_LIMIT = 120.0
 
 
+# Contract kind -> the aioesphomeapi class the bridge must report it as. Matched
+# by name so this module still imports nothing from aioesphomeapi at load time.
+_INFO_CLASS = {
+    "number": "NumberInfo",
+    "switch": "SwitchInfo",
+    "text": "TextInfo",
+    "button": "ButtonInfo",
+}
+
+
 class LocalBridgeUnavailable(Exception):
     """Raised when the bridge cannot be reached or does not look like ours."""
 
@@ -225,6 +235,9 @@ class LocalBridge:
         self._values: dict[str, Any] = {}
         self._connected = False
         self._services: dict[str, Any] = {}
+        # object_id -> the bridge's NumberInfo, for the settings the contract
+        # allows Home Assistant to change. See _learn_controls.
+        self._controls: dict[str, Any] = {}
         self._device_info: Any = None
         self._client: Any = None
         self._reconnect: Any = None
@@ -317,6 +330,8 @@ class LocalBridge:
                 "Local bridge exposes %d action(s): %s",
                 len(self._services), ", ".join(sorted(self._services)) or "none",
             )
+
+            self._learn_controls(entities)
 
             self._client.subscribe_states(self._on_state)
             self._connected = True
@@ -604,6 +619,69 @@ class LocalBridge:
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("Bridge action %s failed: %s", name, err)
             return False
+        return True
+
+    # -------------------------------------------------------------- controls
+    def _learn_controls(self, entities: Any) -> None:
+        """Remember the writable settings this bridge actually has.
+
+        ONLY those named in the contract's `controls`, and only when the
+        bridge reports them as the kind the contract says they are. The bridge
+        has other writable entities -- Wi-Fi credentials, factory reset -- and
+        the allowlist is enforced here as well as in the firmware's contract
+        generator, so a stale or hand-edited contract cannot widen what Home
+        Assistant can touch. A bridge on older firmware simply reports fewer
+        of them, and no entity is created for the rest.
+        """
+        allowed = (self._contract or {}).get("controls", {})
+        self._controls = {}
+        for group in entities or []:
+            for ent in group if isinstance(group, list) else [group]:
+                oid = getattr(ent, "object_id", None)
+                meta = allowed.get(oid)
+                if meta and type(ent).__name__ == _INFO_CLASS.get(meta["kind"]):
+                    self._controls[oid] = ent
+
+    @property
+    def controls(self) -> dict[str, dict[str, Any]]:
+        """Contract metadata for every control this bridge has reported."""
+        allowed = (self._contract or {}).get("controls", {})
+        return {oid: allowed[oid] for oid in self._controls if oid in allowed}
+
+    async def async_control(self, object_id: str, value: Any = None) -> bool:
+        """Set one allowed control, or press it. False if it was not sent."""
+        info = self._controls.get(object_id)
+        meta = self.controls.get(object_id)
+        if info is None or meta is None or self._client is None or not self._connected:
+            return False
+        kind = meta["kind"]
+        try:
+            if kind == "number":
+                value = float(value)
+                result = self._client.number_command(info.key, value)
+            elif kind == "switch":
+                value = bool(value)
+                result = self._client.switch_command(info.key, value)
+            elif kind == "text":
+                value = str(value)
+                result = self._client.text_command(info.key, value)
+            elif kind == "button":
+                result = self._client.button_command(info.key)
+            else:
+                return False
+            # These are synchronous in current aioesphomeapi, but have been
+            # coroutines before -- see the execute_service note in async_call
+            # for what an un-awaited one does, which is nothing.
+            if inspect.isawaitable(result):
+                await result
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Bridge control %s failed: %s", object_id, err)
+            return False
+        # Show the new value now rather than on the next coordinator refresh.
+        # The bridge echoes its real state straight back through _on_state,
+        # which corrects this if it clamped or refused the value.
+        if kind != "button":
+            self._values[object_id] = value
         return True
 
     def raw(self, object_id: str) -> Any:

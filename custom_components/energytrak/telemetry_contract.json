@@ -1011,6 +1011,101 @@
     "temperature_circuit_open",
     "unbalanced_load"
   ],
+  "controls": {
+    "apply_mqtt": {
+      "object_id": "apply_mqtt",
+      "esphome_id": "apply_mqtt",
+      "name": "Apply MQTT",
+      "kind": "button",
+      "category": "config",
+      "icon": "mdi:content-save-cog"
+    },
+    "mqtt_broker": {
+      "object_id": "mqtt_broker",
+      "esphome_id": "cfg_mqtt_host",
+      "name": "MQTT Broker",
+      "kind": "text",
+      "category": "config",
+      "icon": "mdi:server-network",
+      "min_length": 0,
+      "max_length": 64,
+      "mode": "text"
+    },
+    "mqtt_port": {
+      "object_id": "mqtt_port",
+      "esphome_id": "cfg_mqtt_port",
+      "name": "MQTT Port",
+      "kind": "number",
+      "category": "config",
+      "icon": "mdi:numeric",
+      "min": 1.0,
+      "max": 65535.0,
+      "step": 1.0,
+      "unit": null,
+      "mode": "auto"
+    },
+    "confirm_firmware_good": {
+      "object_id": "confirm_firmware_good",
+      "esphome_id": "confirm_firmware_good",
+      "name": "Confirm Firmware Good",
+      "kind": "button",
+      "category": "diagnostic",
+      "icon": "mdi:shield-check"
+    },
+    "dump_event_log": {
+      "object_id": "dump_event_log",
+      "esphome_id": "dump_event_log",
+      "name": "Dump Event Log",
+      "kind": "button",
+      "category": "diagnostic",
+      "icon": "mdi:text-box-search"
+    },
+    "feature__mqtt": {
+      "object_id": "feature__mqtt",
+      "esphome_id": "feat_mqtt",
+      "name": "Feature: MQTT",
+      "kind": "switch",
+      "category": "config",
+      "icon": "mdi:transit-connection-variant"
+    },
+    "feature__infohub_passthrough": {
+      "object_id": "feature__infohub_passthrough",
+      "esphome_id": "feat_passthrough",
+      "name": "Feature: InfoHub Passthrough",
+      "kind": "switch",
+      "category": "config",
+      "icon": "mdi:swap-horizontal"
+    },
+    "status_led_brightness": {
+      "object_id": "status_led_brightness",
+      "esphome_id": "led_brightness",
+      "name": "Status LED Brightness",
+      "kind": "number",
+      "category": "config",
+      "icon": "mdi:brightness-6",
+      "min": 5.0,
+      "max": 100.0,
+      "step": 5.0,
+      "unit": "%",
+      "mode": "slider"
+    },
+    "reset_bus_counters": {
+      "object_id": "reset_bus_counters",
+      "esphome_id": "reset_bus_counters",
+      "name": "Reset Bus Counters",
+      "kind": "button",
+      "category": "diagnostic",
+      "icon": "mdi:restore"
+    },
+    "restart_bridge": {
+      "object_id": "restart_bridge",
+      "esphome_id": "restart_bridge",
+      "name": "Restart Bridge",
+      "kind": "button",
+      "category": "diagnostic",
+      "icon": "mdi:restart"
+    }
+  },
   "snapshot_slots": [
     {
       "key": "battery_voltage",

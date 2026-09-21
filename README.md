@@ -121,6 +121,27 @@ readings the cloud has never carried — per-leg voltages, coolant, cumulative
 energy, and each alarm bit individually — appear as additional entities while
 the bridge is reporting.
 
+### Settings you can change from Home Assistant
+
+Everything above is read-only, and the generator stays that way: the bridge
+never writes to the controller. A short list of the **bridge's own** settings
+can be changed from its device page:
+
+| Kind | Entities |
+| --- | --- |
+| Number | Status LED Brightness, MQTT Port |
+| Switch | Feature: InfoHub Passthrough, Feature: MQTT |
+| Text | MQTT Broker |
+| Button | Apply MQTT, Restart Bridge, Reset Bus Counters, Confirm Firmware Good, Dump Event Log |
+
+The list is an allowlist in the bridge's firmware contract, not "everything the
+bridge has". Wi-Fi, the web login and factory reset are left on the bridge's own
+web page: one bad Wi-Fi value would take it off the network Home Assistant needs
+to put it back. No username or password is ever exposed, because Home Assistant
+would keep it as a plain entity state. MQTT changes take effect when you press
+**Apply MQTT**. The controls appear once the bridge is running firmware that
+has them.
+
 ### Health, and why it is five entities and not one
 
 A monitor that fails silently is worse than no monitor, so the failure modes are
