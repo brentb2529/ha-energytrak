@@ -109,6 +109,23 @@ _SHARED_TEXT_ALIASES: dict[str, dict[str, Any]] = {
         "manual": "MANUAL",
         "off": "OFF",
         "test": "TEST",
+        # A SCHEDULED EXERCISE IS STILL AUTO, AND READING IT OTHERWISE PAGED.
+        #
+        # The controller reports the selector position and a running exercise in
+        # the same field of status register 0x004F: 0x2800 is AUTO, 0x3000 is
+        # "Scheduled Exercise in Progress". The selector has not moved -- the
+        # set is armed and would answer an outage -- but with no alias here the
+        # bridge's text passed through verbatim, and the NOT IN AUTO alert,
+        # which allows only known auto-vocabulary, paged three minutes into the
+        # weekly exercise. Observed 2026-09-26: alerted 13:34, "back in AUTO"
+        # 13:51 when the 20-minute run ended. A false alarm on a life-safety
+        # channel, every Saturday, for a generator doing exactly its job.
+        #
+        # The exercise itself is not lost: `exercising` and
+        # `scheduled_exercise_in_progress` carry it as their own entities, and
+        # switch_status keeps the full text. This field answers one question --
+        # will it start on its own? -- and during an exercise the answer is yes.
+        "scheduled exercise in progress": "AUTO",
     },
     "ignition_status": {
         "running": 1,
