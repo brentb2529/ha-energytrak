@@ -51,6 +51,11 @@ def title(key: str, given: str | None) -> str:
 
 nums, bins, txts, strings = [], [], [], {}
 for key, meta in C["local_only_keys"].items():
+    # `api: false` keys are internal ESPHome sensors: published by the MQTT
+    # snapshot, never by the native API this integration reads. A description
+    # for one of them can never produce an entity.
+    if not meta.get("api", True):
+        continue
     strings[key] = title(key, meta.get("name"))
     kind, unit = meta["kind"], meta.get("unit")
     if kind == "bin":

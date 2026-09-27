@@ -5,7 +5,7 @@ bridge. The EnergyTrak cloud has never carried any of these; they appear
 only while the bridge is reachable, which is why every one of them is
 created through async_setup_reported_entities rather than unconditionally.
 
-Source contract: schema 1, 118 local-only keys.
+Source contract: schema 1, 124 local-only keys.
 """
 from __future__ import annotations
 
@@ -37,132 +37,12 @@ from .sensor import EnergyTrakSensorDescription, _key
 
 LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
     EnergyTrakSensorDescription(
-        key="alarm_register_1",
-        translation_key="alarm_register_1",
+        key="alarm_block_changes",
+        translation_key="alarm_block_changes",
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
         entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_1"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_2",
-        translation_key="alarm_register_2",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_2"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_3",
-        translation_key="alarm_register_3",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_3"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_4",
-        translation_key="alarm_register_4",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_4"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_5",
-        translation_key="alarm_register_5",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_5"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_6",
-        translation_key="alarm_register_6",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_6"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_7",
-        translation_key="alarm_register_7",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_7"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_8",
-        translation_key="alarm_register_8",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_8"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_9",
-        translation_key="alarm_register_9",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_9"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_10",
-        translation_key="alarm_register_10",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_10"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_11",
-        translation_key="alarm_register_11",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_11"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_12",
-        translation_key="alarm_register_12",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_12"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_13",
-        translation_key="alarm_register_13",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_13"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_14",
-        translation_key="alarm_register_14",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_14"),
-    ),
-    EnergyTrakSensorDescription(
-        key="alarm_register_15",
-        translation_key="alarm_register_15",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("alarm_register_15"),
-    ),
-    EnergyTrakSensorDescription(
-        key="status_register",
-        translation_key="status_register",
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=2,
-        entity_registry_enabled_default=False,
-        value_fn=_key("status_register"),
+        value_fn=_key("alarm_block_changes"),
     ),
     EnergyTrakSensorDescription(
         key="event_log_records",
@@ -220,15 +100,6 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
         value_fn=_key("bus_success_rate"),
-    ),
-    EnergyTrakSensorDescription(
-        key="bus_witness",
-        translation_key="bus_witness",
-        device_class=SensorDeviceClass.VOLTAGE,
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-        value_fn=_key("bus_witness"),
     ),
     EnergyTrakSensorDescription(
         key="controller_clock_age",
@@ -387,6 +258,23 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("largest_free_block"),
     ),
     EnergyTrakSensorDescription(
+        key="infohub_registers_served",
+        translation_key="infohub_registers_served",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        entity_registry_enabled_default=False,
+        value_fn=_key("infohub_registers_served"),
+    ),
+    EnergyTrakSensorDescription(
+        key="infohub_request_age",
+        translation_key="infohub_request_age",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=_key("infohub_request_age"),
+    ),
+    EnergyTrakSensorDescription(
         key="l3_apparent_power",
         translation_key="l3_apparent_power",
         device_class=SensorDeviceClass.APPARENT_POWER,
@@ -518,6 +406,12 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         value_fn=_key("wi-fi_signal"),
     ),
     EnergyTrakSensorDescription(
+        key="alarm_block",
+        translation_key="alarm_block",
+        entity_registry_enabled_default=False,
+        value_fn=_key("alarm_block"),
+    ),
+    EnergyTrakSensorDescription(
         key="boot_partition",
         translation_key="boot_partition",
         entity_registry_enabled_default=False,
@@ -553,6 +447,11 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
 # Discrete faults the controller exposes as individual bits. The cloud
 # collapsed all of them into one 'fault' string.
 LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
+    EnergyTrakBinarySensorDescription(
+        key="alarm_block_unexpected_value",
+        translation_key="alarm_block_unexpected_value",
+        value_fn=_key("alarm_block_unexpected_value"),
+    ),
     EnergyTrakBinarySensorDescription(
         key="alternator_input_lost",
         translation_key="alternator_input_lost",
@@ -792,6 +691,11 @@ LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         translation_key="high_voltage_warning__ph-ph_",
         device_class=BinarySensorDeviceClass.PROBLEM,
         value_fn=_key("high_voltage_warning__ph-ph_"),
+    ),
+    EnergyTrakBinarySensorDescription(
+        key="infohub_polling",
+        translation_key="infohub_polling",
+        value_fn=_key("infohub_polling"),
     ),
     EnergyTrakBinarySensorDescription(
         key="low_fuel_level",

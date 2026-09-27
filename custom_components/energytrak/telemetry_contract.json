@@ -150,831 +150,997 @@
     }
   },
   "local_only_keys": {
+    "alarm_block": {
+      "object_id": "alarm_block",
+      "esphome_id": "alarm_block",
+      "unit": null,
+      "name": "Alarm Block",
+      "kind": "txt",
+      "api": true
+    },
+    "alarm_block_changes": {
+      "object_id": "alarm_block_changes",
+      "esphome_id": "alarm_block_changes",
+      "unit": null,
+      "name": "Alarm Block Changes",
+      "kind": "num",
+      "api": true
+    },
+    "alarm_block_unexpected_value": {
+      "object_id": "alarm_block_unexpected_value",
+      "esphome_id": "alarm_block_unexpected",
+      "unit": null,
+      "name": "Alarm Block Unexpected Value",
+      "kind": "bin",
+      "api": true
+    },
     "alarm_register_1": {
       "object_id": "alarm_register_1",
       "esphome_id": "alarm_reg_40",
       "unit": null,
       "name": "Alarm Register 1",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_2": {
       "object_id": "alarm_register_2",
       "esphome_id": "alarm_reg_41",
       "unit": null,
       "name": "Alarm Register 2",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_3": {
       "object_id": "alarm_register_3",
       "esphome_id": "alarm_reg_42",
       "unit": null,
       "name": "Alarm Register 3",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_4": {
       "object_id": "alarm_register_4",
       "esphome_id": "alarm_reg_43",
       "unit": null,
       "name": "Alarm Register 4",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_5": {
       "object_id": "alarm_register_5",
       "esphome_id": "alarm_reg_44",
       "unit": null,
       "name": "Alarm Register 5",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_6": {
       "object_id": "alarm_register_6",
       "esphome_id": "alarm_reg_45",
       "unit": null,
       "name": "Alarm Register 6",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_7": {
       "object_id": "alarm_register_7",
       "esphome_id": "alarm_reg_46",
       "unit": null,
       "name": "Alarm Register 7",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_8": {
       "object_id": "alarm_register_8",
       "esphome_id": "alarm_reg_47",
       "unit": null,
       "name": "Alarm Register 8",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_9": {
       "object_id": "alarm_register_9",
       "esphome_id": "alarm_reg_48",
       "unit": null,
       "name": "Alarm Register 9",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_10": {
       "object_id": "alarm_register_10",
       "esphome_id": "alarm_reg_49",
       "unit": null,
       "name": "Alarm Register 10",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_11": {
       "object_id": "alarm_register_11",
       "esphome_id": "alarm_reg_4a",
       "unit": null,
       "name": "Alarm Register 11",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_12": {
       "object_id": "alarm_register_12",
       "esphome_id": "alarm_reg_4b",
       "unit": null,
       "name": "Alarm Register 12",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_13": {
       "object_id": "alarm_register_13",
       "esphome_id": "alarm_reg_4c",
       "unit": null,
       "name": "Alarm Register 13",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_14": {
       "object_id": "alarm_register_14",
       "esphome_id": "alarm_reg_4d",
       "unit": null,
       "name": "Alarm Register 14",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alarm_register_15": {
       "object_id": "alarm_register_15",
       "esphome_id": "alarm_reg_4e",
       "unit": null,
       "name": "Alarm Register 15",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "status_register": {
       "object_id": "status_register",
       "esphome_id": "alarm_reg_4f",
       "unit": null,
       "name": "Status Register",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "alternator_input_lost": {
       "object_id": "alternator_input_lost",
       "esphome_id": "alternator_input_lost",
       "unit": null,
       "name": "Alternator Input Lost",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_a": {
       "object_id": "auxiliary_input_a",
       "esphome_id": "auxiliary_input_a",
       "unit": null,
       "name": "Auxiliary Input A",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_b": {
       "object_id": "auxiliary_input_b",
       "esphome_id": "auxiliary_input_b",
       "unit": null,
       "name": "Auxiliary Input B",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_c": {
       "object_id": "auxiliary_input_c",
       "esphome_id": "auxiliary_input_c",
       "unit": null,
       "name": "Auxiliary Input C",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_d": {
       "object_id": "auxiliary_input_d",
       "esphome_id": "auxiliary_input_d",
       "unit": null,
       "name": "Auxiliary Input D",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_e": {
       "object_id": "auxiliary_input_e",
       "esphome_id": "auxiliary_input_e",
       "unit": null,
       "name": "Auxiliary Input E",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_f": {
       "object_id": "auxiliary_input_f",
       "esphome_id": "auxiliary_input_f",
       "unit": null,
       "name": "Auxiliary Input F",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_g": {
       "object_id": "auxiliary_input_g",
       "esphome_id": "auxiliary_input_g",
       "unit": null,
       "name": "Auxiliary Input G",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_h": {
       "object_id": "auxiliary_input_h",
       "esphome_id": "auxiliary_input_h",
       "unit": null,
       "name": "Auxiliary Input H",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "auxiliary_input_i": {
       "object_id": "auxiliary_input_i",
       "esphome_id": "auxiliary_input_i",
       "unit": null,
       "name": "Auxiliary Input I",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "event_log_records": {
       "object_id": "event_log_records",
       "esphome_id": "backlog_count",
       "unit": null,
       "name": "Event Log Records",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "event_log_cursor": {
       "object_id": "event_log_cursor",
       "esphome_id": "backlog_cursor",
       "unit": null,
       "name": "Event Log Cursor",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "event_log_pending": {
       "object_id": "event_log_pending",
       "esphome_id": "backlog_pending",
       "unit": null,
       "name": "Event Log Pending",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "battery_high_voltage": {
       "object_id": "battery_high_voltage",
       "esphome_id": "battery_high_voltage",
       "unit": null,
       "name": "Battery High Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "battery_low_voltage": {
       "object_id": "battery_low_voltage",
       "esphome_id": "battery_low_voltage",
       "unit": null,
       "name": "Battery Low Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "boot_partition": {
       "object_id": "boot_partition",
       "esphome_id": "boot_partition",
       "unit": null,
       "name": "Boot Partition",
-      "kind": "txt"
+      "kind": "txt",
+      "api": true
     },
     "uptime": {
       "object_id": "uptime",
       "esphome_id": "bridge_uptime",
       "unit": "s",
       "name": "Uptime",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "bus_reads_missed": {
       "object_id": "bus_reads_missed",
       "esphome_id": "bus_reads_missed",
       "unit": null,
       "name": "Bus Reads Missed",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "bus_reads_ok": {
       "object_id": "bus_reads_ok",
       "esphome_id": "bus_reads_ok",
       "unit": null,
       "name": "Bus Reads OK",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "bus_success_rate": {
       "object_id": "bus_success_rate",
       "esphome_id": "bus_success_rate",
       "unit": "%",
       "name": "Bus Success Rate",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "bus_witness": {
       "object_id": "bus_witness",
       "esphome_id": "bus_witness",
       "unit": "V",
       "name": "bus_witness",
-      "kind": "num"
+      "kind": "num",
+      "api": false
     },
     "controller_clock_age": {
       "object_id": "controller_clock_age",
       "esphome_id": "controller_clock_age",
       "unit": "s",
       "name": "Controller Clock Age",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "controller_clock_skew": {
       "object_id": "controller_clock_skew",
       "esphome_id": "controller_clock_skew",
       "unit": "min",
       "name": "Controller Clock Skew",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "controller_time": {
       "object_id": "controller_time",
       "esphome_id": "controller_time",
       "unit": null,
       "name": "Controller Time",
-      "kind": "txt"
+      "kind": "txt",
+      "api": true
     },
     "coolant_temperature": {
       "object_id": "coolant_temperature",
       "esphome_id": "coolant_temperature",
       "unit": "\u00b0C",
       "name": "Coolant Temperature",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "cumulative_apparent_energy": {
       "object_id": "cumulative_apparent_energy",
       "esphome_id": "cumulative_apparent_energy",
       "unit": "kVAh",
       "name": "Cumulative Apparent Energy",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "cumulative_energy": {
       "object_id": "cumulative_energy",
       "esphome_id": "cumulative_energy",
       "unit": "kWh",
       "name": "Cumulative Energy",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "cumulative_reactive_energy": {
       "object_id": "cumulative_reactive_energy",
       "esphome_id": "cumulative_reactive_energy",
       "unit": "kvarh",
       "name": "Cumulative Reactive Energy",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "dg_phase_rotation": {
       "object_id": "dg_phase_rotation",
       "esphome_id": "dg_phase_rotation",
       "unit": null,
       "name": "DG Phase Rotation",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "electrical_trip": {
       "object_id": "electrical_trip",
       "esphome_id": "electrical_trip",
       "unit": null,
       "name": "Electrical Trip",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "emergency_stop": {
       "object_id": "emergency_stop",
       "esphome_id": "emergency_stop",
       "unit": null,
       "name": "Emergency Stop",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "engine_failed_to_start": {
       "object_id": "engine_failed_to_start",
       "esphome_id": "engine_failed_to_start",
       "unit": null,
       "name": "Engine Failed to Start",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "engine_failed_to_stop": {
       "object_id": "engine_failed_to_stop",
       "esphome_id": "engine_failed_to_stop",
       "unit": null,
       "name": "Engine Failed to Stop",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "engine_over_speed": {
       "object_id": "engine_over_speed",
       "esphome_id": "engine_over_speed",
       "unit": null,
       "name": "Engine Over Speed",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "engine_running": {
       "object_id": "engine_running",
       "esphome_id": "engine_running",
       "unit": null,
       "name": "Engine Running",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "engine_starting": {
       "object_id": "engine_starting",
       "esphome_id": "engine_starting",
       "unit": null,
       "name": "Engine Starting",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "engine_under_speed": {
       "object_id": "engine_under_speed",
       "esphome_id": "engine_under_speed",
       "unit": null,
       "name": "Engine Under Speed",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "esp_internal_temperature": {
       "object_id": "esp_internal_temperature",
       "esphome_id": "esp_temp",
       "unit": "\u00b0C",
       "name": "ESP Internal Temperature",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "exercising": {
       "object_id": "exercising",
       "esphome_id": "exercising",
       "unit": null,
       "name": "Exercising",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "extended_over_load_trip": {
       "object_id": "extended_over_load_trip",
       "esphome_id": "extended_over_load_trip",
       "unit": null,
       "name": "Extended Over Load Trip",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "free_heap": {
       "object_id": "free_heap",
       "esphome_id": "free_heap",
       "unit": "B",
       "name": "Free Heap",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "fuel_cap_open_circuit": {
       "object_id": "fuel_cap_open_circuit",
       "esphome_id": "fuel_cap_open_circuit",
       "unit": null,
       "name": "Fuel Cap Open Circuit",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "fuel_level": {
       "object_id": "fuel_level",
       "esphome_id": "fuel_level",
       "unit": "%",
       "name": "Fuel Level",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "fuel_theft": {
       "object_id": "fuel_theft",
       "esphome_id": "fuel_theft",
       "unit": null,
       "name": "Fuel Theft",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "fuel_volume": {
       "object_id": "fuel_volume",
       "esphome_id": "fuel_volume",
       "unit": "L",
       "name": "Fuel Volume",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "gen_l1_phase_high_voltage": {
       "object_id": "gen_l1_phase_high_voltage",
       "esphome_id": "gen_l1_phase_high_voltage",
       "unit": null,
       "name": "Gen L1 Phase High Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "gen_l1_phase_low_voltage": {
       "object_id": "gen_l1_phase_low_voltage",
       "esphome_id": "gen_l1_phase_low_voltage",
       "unit": null,
       "name": "Gen L1 Phase Low Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "gen_l2_phase_high_voltage": {
       "object_id": "gen_l2_phase_high_voltage",
       "esphome_id": "gen_l2_phase_high_voltage",
       "unit": null,
       "name": "Gen L2 Phase High Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "gen_l2_phase_low_voltage": {
       "object_id": "gen_l2_phase_low_voltage",
       "esphome_id": "gen_l2_phase_low_voltage",
       "unit": null,
       "name": "Gen L2 Phase Low Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "gen_l3_phase_high_voltage": {
       "object_id": "gen_l3_phase_high_voltage",
       "esphome_id": "gen_l3_phase_high_voltage",
       "unit": null,
       "name": "Gen L3 Phase High Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "gen_l3_phase_low_voltage": {
       "object_id": "gen_l3_phase_low_voltage",
       "esphome_id": "gen_l3_phase_low_voltage",
       "unit": null,
       "name": "Gen L3 Phase Low Voltage",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "general_notification": {
       "object_id": "general_notification",
       "esphome_id": "general_notification",
       "unit": null,
       "name": "General Notification",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "general_warning": {
       "object_id": "general_warning",
       "esphome_id": "general_warning",
       "unit": null,
       "name": "General Warning",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "generator_failed_to_start": {
       "object_id": "generator_failed_to_start",
       "esphome_id": "generator_failed_to_start",
       "unit": null,
       "name": "Generator Failed to Start",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "generator_high_current": {
       "object_id": "generator_high_current",
       "esphome_id": "generator_high_current",
       "unit": null,
       "name": "Generator High Current",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "generator_high_frequency": {
       "object_id": "generator_high_frequency",
       "esphome_id": "generator_high_frequency",
       "unit": null,
       "name": "Generator High Frequency",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "generator_l1-l2_voltage": {
       "object_id": "generator_l1-l2_voltage",
       "esphome_id": "generator_l1_l2_voltage",
       "unit": "V",
       "name": "Generator L1-L2 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_l2_frequency": {
       "object_id": "generator_l2_frequency",
       "esphome_id": "generator_l2_frequency",
       "unit": "Hz",
       "name": "Generator L2 Frequency",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_l2-l3_voltage": {
       "object_id": "generator_l2-l3_voltage",
       "esphome_id": "generator_l2_l3_voltage",
       "unit": "V",
       "name": "Generator L2-L3 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_l3_current": {
       "object_id": "generator_l3_current",
       "esphome_id": "generator_l3_current",
       "unit": "A",
       "name": "Generator L3 Current",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_l3_frequency": {
       "object_id": "generator_l3_frequency",
       "esphome_id": "generator_l3_frequency",
       "unit": "Hz",
       "name": "Generator L3 Frequency",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_l3-l1_voltage": {
       "object_id": "generator_l3-l1_voltage",
       "esphome_id": "generator_l3_l1_voltage",
       "unit": "V",
       "name": "Generator L3-L1 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_l3_voltage": {
       "object_id": "generator_l3_voltage",
       "esphome_id": "generator_l3_voltage",
       "unit": "V",
       "name": "Generator L3 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "generator_low_frequency": {
       "object_id": "generator_low_frequency",
       "esphome_id": "generator_low_frequency",
       "unit": null,
       "name": "Generator Low Frequency",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "generator_overload": {
       "object_id": "generator_overload",
       "esphome_id": "generator_overload",
       "unit": null,
       "name": "Generator Overload",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "largest_free_block": {
       "object_id": "largest_free_block",
       "esphome_id": "heap_max_block",
       "unit": "B",
       "name": "Largest Free Block",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "high_coolant_temperature": {
       "object_id": "high_coolant_temperature",
       "esphome_id": "high_coolant_temperature",
       "unit": null,
       "name": "High Coolant Temperature",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "high_oil_pressure_detected": {
       "object_id": "high_oil_pressure_detected",
       "esphome_id": "high_oil_pressure_detected",
       "unit": null,
       "name": "High Oil Pressure Detected",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "high_voltage_warning_1__ph-ph_": {
       "object_id": "high_voltage_warning_1__ph-ph_",
       "esphome_id": "high_voltage_warning_1_ph_ph",
       "unit": null,
       "name": "High Voltage Warning 1 (Ph-Ph)",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "high_voltage_warning_2__ph-ph_": {
       "object_id": "high_voltage_warning_2__ph-ph_",
       "esphome_id": "high_voltage_warning_2_ph_ph",
       "unit": null,
       "name": "High Voltage Warning 2 (Ph-Ph)",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "high_voltage_warning__ph-ph_": {
       "object_id": "high_voltage_warning__ph-ph_",
       "esphome_id": "high_voltage_warning_ph_ph",
       "unit": null,
       "name": "High Voltage Warning (Ph-Ph)",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
+    },
+    "infohub_polling": {
+      "object_id": "infohub_polling",
+      "esphome_id": "infohub_polling",
+      "unit": null,
+      "name": "InfoHub Polling",
+      "kind": "bin",
+      "api": true
+    },
+    "infohub_registers_served": {
+      "object_id": "infohub_registers_served",
+      "esphome_id": "infohub_regs_served",
+      "unit": null,
+      "name": "InfoHub Registers Served",
+      "kind": "num",
+      "api": true
+    },
+    "infohub_request_age": {
+      "object_id": "infohub_request_age",
+      "esphome_id": "infohub_request_age",
+      "unit": "s",
+      "name": "InfoHub Request Age",
+      "kind": "num",
+      "api": true
     },
     "l3_apparent_power": {
       "object_id": "l3_apparent_power",
       "esphome_id": "l3_apparent_power",
       "unit": "kVA",
       "name": "L3 Apparent Power",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "l3_power": {
       "object_id": "l3_power",
       "esphome_id": "l3_power",
       "unit": "kW",
       "name": "L3 Power",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "l3_power_factor": {
       "object_id": "l3_power_factor",
       "esphome_id": "l3_power_factor",
       "unit": null,
       "name": "L3 Power Factor",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "l3_reactive_power": {
       "object_id": "l3_reactive_power",
       "esphome_id": "l3_reactive_power",
       "unit": "kvar",
       "name": "L3 Reactive Power",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "last_reset_reason": {
       "object_id": "last_reset_reason",
       "esphome_id": "last_reset_reason",
       "unit": null,
       "name": "Last Reset Reason",
-      "kind": "txt"
+      "kind": "txt",
+      "api": true
     },
     "loop_time": {
       "object_id": "loop_time",
       "esphome_id": "loop_time",
       "unit": "ms",
       "name": "Loop Time",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "low_fuel_level": {
       "object_id": "low_fuel_level",
       "esphome_id": "low_fuel_level",
       "unit": null,
       "name": "Low Fuel Level",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "low_oil_pressure": {
       "object_id": "low_oil_pressure",
       "esphome_id": "low_oil_pressure",
       "unit": null,
       "name": "Low Oil Pressure",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "low_voltage_failure_1__ph-ph_": {
       "object_id": "low_voltage_failure_1__ph-ph_",
       "esphome_id": "low_voltage_failure_1_ph_ph",
       "unit": null,
       "name": "Low Voltage Failure 1 (Ph-Ph)",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "low_voltage_failure_2__ph-ph_": {
       "object_id": "low_voltage_failure_2__ph-ph_",
       "esphome_id": "low_voltage_failure_2_ph_ph",
       "unit": null,
       "name": "Low Voltage Failure 2 (Ph-Ph)",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "magnetic_pick_up_fault": {
       "object_id": "magnetic_pick_up_fault",
       "esphome_id": "magnetic_pick_up_fault",
       "unit": null,
       "name": "Magnetic Pick Up Fault",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "mains_phase_rotation": {
       "object_id": "mains_phase_rotation",
       "esphome_id": "mains_phase_rotation",
       "unit": null,
       "name": "Mains Phase Rotation",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "maintenance_required": {
       "object_id": "maintenance_required",
       "esphome_id": "maintenance_required",
       "unit": null,
       "name": "Maintenance Required",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "oil_pressure": {
       "object_id": "oil_pressure",
       "esphome_id": "oil_pressure_bar",
       "unit": "bar",
       "name": "Oil Pressure",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "oil_pressure_open_circuit": {
       "object_id": "oil_pressure_open_circuit",
       "esphome_id": "oil_pressure_open_circuit",
       "unit": null,
       "name": "Oil Pressure Open Circuit",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "percentage_load": {
       "object_id": "percentage_load",
       "esphome_id": "percentage_load",
       "unit": "%",
       "name": "Percentage Load",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "power_status": {
       "object_id": "power_status",
       "esphome_id": "power_status",
       "unit": null,
       "name": "Power Status",
-      "kind": "txt"
+      "kind": "txt",
+      "api": true
     },
     "scheduled_exercise_in_progress": {
       "object_id": "scheduled_exercise_in_progress",
       "esphome_id": "scheduled_exercise",
       "unit": null,
       "name": "Scheduled Exercise in Progress",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "status_register_raw": {
       "object_id": "status_register_raw",
       "esphome_id": "status_register_raw",
       "unit": null,
       "name": "Status Register Raw",
-      "kind": "txt"
+      "kind": "txt",
+      "api": true
     },
     "temperature_circuit_open": {
       "object_id": "temperature_circuit_open",
       "esphome_id": "temperature_circuit_open",
       "unit": null,
       "name": "Temperature Circuit Open",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "unbalanced_load": {
       "object_id": "unbalanced_load",
       "esphome_id": "unbalanced_load",
       "unit": null,
       "name": "Unbalanced Load",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "utility_l1_voltage": {
       "object_id": "utility_l1_voltage",
       "esphome_id": "utility_l1_voltage",
       "unit": "V",
       "name": "Utility L1 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_l2_frequency": {
       "object_id": "utility_l2_frequency",
       "esphome_id": "utility_l2_frequency",
       "unit": "Hz",
       "name": "Utility L2 Frequency",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_l2-l3_voltage": {
       "object_id": "utility_l2-l3_voltage",
       "esphome_id": "utility_l2_l3_voltage",
       "unit": "V",
       "name": "Utility L2-L3 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_l2_voltage": {
       "object_id": "utility_l2_voltage",
       "esphome_id": "utility_l2_voltage",
       "unit": "V",
       "name": "Utility L2 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_l3_frequency": {
       "object_id": "utility_l3_frequency",
       "esphome_id": "utility_l3_frequency",
       "unit": "Hz",
       "name": "Utility L3 Frequency",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_l3-l1_voltage": {
       "object_id": "utility_l3-l1_voltage",
       "esphome_id": "utility_l3_l1_voltage",
       "unit": "V",
       "name": "Utility L3-L1 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_l3_voltage": {
       "object_id": "utility_l3_voltage",
       "esphome_id": "utility_l3_voltage",
       "unit": "V",
       "name": "Utility L3 Voltage",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     },
     "utility_power_failure": {
       "object_id": "utility_power_failure",
       "esphome_id": "utility_power_failure",
       "unit": null,
       "name": "Utility Power Failure",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "water_level_switch": {
       "object_id": "water_level_switch",
       "esphome_id": "water_level_switch",
       "unit": null,
       "name": "Water Level Switch",
-      "kind": "bin"
+      "kind": "bin",
+      "api": true
     },
     "wi-fi_signal": {
       "object_id": "wi-fi_signal",
       "esphome_id": "wifi_rssi",
       "unit": "dBm",
       "name": "Wi-Fi Signal",
-      "kind": "num"
+      "kind": "num",
+      "api": true
     }
   },
   "alarm_keys": [

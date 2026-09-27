@@ -1,48 +1,12 @@
 {
-  "alarm_register_1": {
-    "name": "Alarm Register 1"
+  "alarm_block": {
+    "name": "Alarm Block"
   },
-  "alarm_register_10": {
-    "name": "Alarm Register 10"
+  "alarm_block_changes": {
+    "name": "Alarm Block Changes"
   },
-  "alarm_register_11": {
-    "name": "Alarm Register 11"
-  },
-  "alarm_register_12": {
-    "name": "Alarm Register 12"
-  },
-  "alarm_register_13": {
-    "name": "Alarm Register 13"
-  },
-  "alarm_register_14": {
-    "name": "Alarm Register 14"
-  },
-  "alarm_register_15": {
-    "name": "Alarm Register 15"
-  },
-  "alarm_register_2": {
-    "name": "Alarm Register 2"
-  },
-  "alarm_register_3": {
-    "name": "Alarm Register 3"
-  },
-  "alarm_register_4": {
-    "name": "Alarm Register 4"
-  },
-  "alarm_register_5": {
-    "name": "Alarm Register 5"
-  },
-  "alarm_register_6": {
-    "name": "Alarm Register 6"
-  },
-  "alarm_register_7": {
-    "name": "Alarm Register 7"
-  },
-  "alarm_register_8": {
-    "name": "Alarm Register 8"
-  },
-  "alarm_register_9": {
-    "name": "Alarm Register 9"
+  "alarm_block_unexpected_value": {
+    "name": "Alarm Block Unexpected Value"
   },
   "alternator_input_lost": {
     "name": "Alternator Input Lost"
@@ -91,9 +55,6 @@
   },
   "bus_success_rate": {
     "name": "Bus Success Rate"
-  },
-  "bus_witness": {
-    "name": "bus_witness"
   },
   "controller_clock_age": {
     "name": "Controller Clock Age"
@@ -251,6 +212,15 @@
   "high_voltage_warning__ph-ph_": {
     "name": "High Voltage Warning (Ph-Ph)"
   },
+  "infohub_polling": {
+    "name": "InfoHub Polling"
+  },
+  "infohub_registers_served": {
+    "name": "InfoHub Registers Served"
+  },
+  "infohub_request_age": {
+    "name": "InfoHub Request Age"
+  },
   "l3_apparent_power": {
     "name": "L3 Apparent Power"
   },
@@ -307,9 +277,6 @@
   },
   "scheduled_exercise_in_progress": {
     "name": "Scheduled Exercise in Progress"
-  },
-  "status_register": {
-    "name": "Status Register"
   },
   "status_register_raw": {
     "name": "Status Register Raw"
