@@ -406,7 +406,6 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
     EnergyTrakSensorDescription(
         key="alarm_block",
         translation_key="alarm_block",
-        entity_registry_enabled_default=False,
         value_fn=_key("alarm_block"),
     ),
     EnergyTrakSensorDescription(

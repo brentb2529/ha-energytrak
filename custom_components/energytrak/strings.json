@@ -11,14 +11,14 @@
       },
       "cloud": {
         "title": "Connect to EnergyTrak",
-        "description": "Request a sign-in link from the EnergyTrak app or website, then paste the full link from that email below. The link is single-use \u2014 do not open it in a browser first.",
+        "description": "Request a sign-in link from the EnergyTrak app or website, then paste the full link from that email below. The link is single-use — do not open it in a browser first.",
         "data": {
           "email": "Email address",
           "magic_link": "Sign-in link"
         },
         "data_description": {
           "email": "The address the EnergyTrak sign-in link was sent to.",
-          "magic_link": "Copy the link target from the email (right-click the sign-in button \u2192 Copy link address)."
+          "magic_link": "Copy the link target from the email (right-click the sign-in button → Copy link address)."
         }
       },
       "bridge": {
@@ -31,7 +31,7 @@
       },
       "bridge_manual": {
         "title": "Local B-Infohub bridge",
-        "description": "Enter the bridge's address and its API encryption key (api_encryption_key in its secrets.yaml). Use this when mDNS discovery cannot reach it \u2014 for example when the generator is on its own VLAN.",
+        "description": "Enter the bridge's address and its API encryption key (api_encryption_key in its secrets.yaml). Use this when mDNS discovery cannot reach it — for example when the generator is on its own VLAN.",
         "data": {
           "local_host": "Host or IP address",
           "local_port": "Port",
@@ -40,7 +40,7 @@
       },
       "sites": {
         "title": "Choose generators",
-        "description": "Select the EnergyTrak sites to add. If none are listed, your account cannot browse the site list \u2014 enter the site IDs manually instead.",
+        "description": "Select the EnergyTrak sites to add. If none are listed, your account cannot browse the site list — enter the site IDs manually instead.",
         "data": {
           "site_ids": "Sites",
           "manual_site_ids": "Additional site IDs"
@@ -58,21 +58,21 @@
       },
       "reconfigure": {
         "title": "Update EnergyTrak sign-in",
-        "description": "Replace the stored credentials for {email}. Request a fresh sign-in link from the EnergyTrak app or website and paste it below. Do this whenever you sign in elsewhere, since a new sign-in can invalidate the token Home Assistant is using. The link is single-use \u2014 do not open it in a browser first.",
+        "description": "Replace the stored credentials for {email}. Request a fresh sign-in link from the EnergyTrak app or website and paste it below. Do this whenever you sign in elsewhere, since a new sign-in can invalidate the token Home Assistant is using. The link is single-use — do not open it in a browser first.",
         "data": {
           "email": "Email address",
           "magic_link": "Sign-in link"
         },
         "data_description": {
           "email": "Must be the same EnergyTrak account; to add a different account, add another integration entry.",
-          "magic_link": "Copy the link target from the email (right-click the sign-in button \u2192 Copy link address)."
+          "magic_link": "Copy the link target from the email (right-click the sign-in button → Copy link address)."
         }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to EnergyTrak.",
       "invalid_auth": "EnergyTrak rejected the sign-in.",
-      "invalid_magic_link": "That does not look like a sign-in link \u2014 it must contain apiKey and oobCode parameters.",
+      "invalid_magic_link": "That does not look like a sign-in link — it must contain apiKey and oobCode parameters.",
       "expired_link": "That sign-in link has expired or was already used. Request a new one.",
       "email_mismatch": "The link does not match that email address.",
       "no_sites_selected": "Select at least one site, or enter a site ID manually.",
@@ -603,6 +603,60 @@
       },
       "wi-fi_signal": {
         "name": "Wi-Fi Signal"
+      },
+      "alarm_block": {
+        "name": "Alarm Block"
+      },
+      "alarm_block_changes": {
+        "name": "Alarm Block Changes"
+      },
+      "event_log_records": {
+        "name": "Event Log Records"
+      },
+      "event_log_cursor": {
+        "name": "Event Log Cursor"
+      },
+      "event_log_pending": {
+        "name": "Event Log Pending"
+      },
+      "boot_partition": {
+        "name": "Boot Partition"
+      },
+      "bus_reads_missed": {
+        "name": "Bus Reads Missed"
+      },
+      "bus_reads_ok": {
+        "name": "Bus Reads OK"
+      },
+      "bus_success_rate": {
+        "name": "Bus Success Rate"
+      },
+      "controller_clock_skew": {
+        "name": "Controller Clock Skew"
+      },
+      "controller_time": {
+        "name": "Controller Time"
+      },
+      "free_heap": {
+        "name": "Free Heap"
+      },
+      "largest_free_block": {
+        "name": "Largest Free Block"
+      },
+      "infohub_registers_served": {
+        "name": "InfoHub Registers Served"
+      },
+      "infohub_request_age": {
+        "name": "InfoHub Request Age"
+      },
+      "last_reset_reason": {
+        "name": "Last Reset Reason"
+      },
+      "loop_time": {
+        "name": "Loop Time"
+      },
+      "status_register_raw": {
+        "name": "Status Register Raw"
       }
     },
     "binary_sensor": {
@@ -818,6 +872,12 @@
       },
       "water_level_switch": {
         "name": "Water Level Switch"
+      },
+      "alarm_block_unexpected_value": {
+        "name": "Alarm Block Unexpected Value"
+      },
+      "infohub_polling": {
+        "name": "InfoHub Polling"
       }
     }
   }

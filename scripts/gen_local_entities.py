@@ -129,8 +129,8 @@ out += [sensor_block(k, m, u) for k, m, u in nums]
 out += [
     f'    EnergyTrakSensorDescription(\n        key="{k}",\n'
     f'        translation_key="{k}",\n'
-    f'        entity_registry_enabled_default=False,\n'
-    f'        value_fn=_key("{k}"),\n    ),'
+    + ("" if k in ALWAYS_ENABLED else "        entity_registry_enabled_default=False,\n")
+    + f'        value_fn=_key("{k}"),\n    ),'
     for k, _m in txts
 ]
 out += [")", "", "",
@@ -148,6 +148,30 @@ out += [")", ""]
 
 (HERE / "scripts/local_strings.json").write_text(json.dumps(
     {k: {"name": v} for k, v in sorted(strings.items())}, indent=2) + "\n")
+
+# NAMES MUST REACH THE TRANSLATION FILES, OR THE ENTITY HAS NO NAME AT ALL.
+#
+# local_strings.json was written for someone to merge by hand, and nobody
+# did: every local-only key added since (status_register_raw in v1.21, the
+# alarm block and InfoHub counters in v1.25) appeared in Home Assistant with
+# no name, as sensor.<device>_14, _15, _16 -- unfindable, and one of them is
+# what the alarm-block alert watches. Merged here, into both strings.json
+# and translations/en.json, only for keys not already present, so a name
+# somebody hand-tuned is never overwritten by the contract's title.
+bin_keys = {k for k, _ in bins}
+for tf in ("custom_components/energytrak/strings.json",
+           "custom_components/energytrak/translations/en.json"):
+    path = HERE / tf
+    doc = json.loads(path.read_text())
+    ent = doc.setdefault("entity", {})
+    added = 0
+    for k, name in strings.items():
+        dom = ent.setdefault("binary_sensor" if k in bin_keys else "sensor", {})
+        if k not in dom:
+            dom[k] = {"name": name}
+            added += 1
+    path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+    print(f"  {tf}: {added} entity name(s) added")
 
 # SHIP THE CONTRACT WE JUST GENERATED FROM, NOT A HAND-COPIED ONE.
 #
