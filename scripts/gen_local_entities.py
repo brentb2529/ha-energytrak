@@ -46,6 +46,16 @@ UNITS = {
     "s":     ("UnitOfTime.SECONDS",               "DURATION",        "MEASUREMENT", 0),
 }
 
+# Unitless keys are disabled by default -- raw registers and research values
+# have no business cluttering a device page. These are the exceptions: the
+# entities an alert or a person must be able to find without knowing to enable
+# them first. The alarm block is the only visibility into alarms while their
+# encoding is unproven; the port-B counters answer "is the InfoHub served".
+ALWAYS_ENABLED = {
+    "alarm_block", "alarm_block_changes", "alarm_block_unexpected_value",
+    "infohub_polling", "infohub_registers_served",
+}
+
 def title(key: str, given: str | None) -> str:
     return given or key.replace("_", " ").title()
 
@@ -74,7 +84,8 @@ def sensor_block(key, meta, u):
     elif meta.get("unit"): L.append(f'        native_unit_of_measurement="{meta["unit"]}",')
     if state:  L.append(f"        state_class=SensorStateClass.{state},")
     L += [f"        suggested_display_precision={prec},",
-          "        entity_registry_enabled_default=False," if meta.get("unit") is None else "",
+          "        entity_registry_enabled_default=False,"
+              if meta.get("unit") is None and key not in ALWAYS_ENABLED else "",
           f'        value_fn=_key("{key}"),', "    ),"]
     return "\n".join(x for x in L if x)
 

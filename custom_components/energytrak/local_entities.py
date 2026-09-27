@@ -41,7 +41,6 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         translation_key="alarm_block_changes",
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
-        entity_registry_enabled_default=False,
         value_fn=_key("alarm_block_changes"),
     ),
     EnergyTrakSensorDescription(
@@ -262,7 +261,6 @@ LOCAL_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         translation_key="infohub_registers_served",
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
-        entity_registry_enabled_default=False,
         value_fn=_key("infohub_registers_served"),
     ),
     EnergyTrakSensorDescription(
