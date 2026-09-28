@@ -213,6 +213,19 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             runtime.exercise_seen = [
                 str(x) for x in (record.get("exercise_seen") or [])
             ][-4:]
+            # The change detector's memory. Without it, every restart declared
+            # the first poll a "change": last_changed_at snapped to now, the
+            # vendor-unchanged metric fell to zero, and the Grafana rule built
+            # on it resolved an outage that was still going -- one false
+            # "resolved" email per Home Assistant restart (seen 2026-09-28).
+            sig = record.get("change_signature")
+            runtime.signature = tuple(sig) if isinstance(sig, list) else None
+            changed_raw = record.get("last_changed_at")
+            if changed_raw:
+                try:
+                    runtime.last_changed_at = datetime.fromisoformat(changed_raw)
+                except ValueError:
+                    runtime.last_changed_at = None
 
     async def _async_save_freshness(self) -> None:
         """Persist the current signature/observation for every site."""
@@ -227,9 +240,19 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
                             else None
                         ),
                         "exercise_seen": runtime.exercise_seen,
+                        "change_signature": (
+                            list(runtime.signature) if runtime.signature else None
+                        ),
+                        "last_changed_at": (
+                            runtime.last_changed_at.isoformat()
+                            if runtime.last_changed_at
+                            else None
+                        ),
                     }
                     for site_id, runtime in self.sites.items()
-                    if runtime.freshness.signature or runtime.exercise_seen
+                    if runtime.freshness.signature
+                    or runtime.exercise_seen
+                    or runtime.signature
                 }
             }
         )
@@ -244,10 +267,15 @@ class EnergyTrakCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         freshness_changed = False
 
         for site_id in self.cloud_site_ids:
-            before = self.sites.get(site_id, SiteRuntime()).freshness
+            prior = self.sites.get(site_id, SiteRuntime())
+            before = prior.freshness
+            before_signature = prior.signature
             try:
                 results[site_id] = await self._async_fetch_site(site_id)
-                if self.sites[site_id].freshness != before:
+                after = self.sites[site_id]
+                # The change signature moves only when the vendor's payload
+                # really changes, so persisting on it is as rare as freshness.
+                if after.freshness != before or after.signature != before_signature:
                     freshness_changed = True
             except EnergyTrakAuthError as err:
                 raise ConfigEntryAuthFailed(
