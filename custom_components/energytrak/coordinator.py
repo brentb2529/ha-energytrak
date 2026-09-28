@@ -45,8 +45,16 @@ _LOGGER = logging.getLogger(__name__)
 # whole tuple is byte-identical poll after poll, EnergyTrak itself is stuck —
 # which is a different failure from "our polling stopped", and users need to
 # be able to tell them apart.
+#
+# NOT cleanState.lastUpdated. That is the vendor's own bookkeeping stamp, and
+# it moves without any data behind it: during the 26-hour EnergyTrak outage of
+# 2026-09-26/27 it ticked at 00:00Z while equipment_data_timestamp -- which
+# only advances when the InfoHub actually uploads -- stayed frozen. Counting it
+# reset last_changed_at to "now" in the middle of a dead feed, the Grafana
+# VendorDataFrozen alert saw a recovery that had not happened, and the owner
+# got a "resolved" email followed by a fresh "firing" one an hour later.
+# A timestamp that advances without data is not freshness.
 _FRESHNESS_KEYS = (
-    "clean_state_last_updated",
     "equipment_data_timestamp",
     "battery_voltage",
     "engine_hours",
