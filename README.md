@@ -121,6 +121,19 @@ readings the cloud has never carried — per-leg voltages, coolant, cumulative
 energy, and each alarm bit individually — appear as additional entities while
 the bridge is reporting.
 
+### What the bridge learned about the controller
+
+Bridge firmware 1.2.0 and later probes the generator once on first contact
+and publishes a **Controller Profile**. This integration reads it: the device
+model becomes the *learned* family (`GC-1030 series`, or `Unknown controller`
+— never an assumed GC-1032), and four diagnostics appear — **Controller
+family** (protocol revision, firmware and model words as attributes),
+**Registers present**, **Alarm inputs indeterminate** (with ok / absent /
+unexpected counts) and **Commissioned**. Active-alarm counting then applies
+the four-state rule: an alarm input that read `F` at rest is not fitted, one
+that read `0` at rest is indeterminate, and neither is counted; only a real
+`1 → 0` transition is. Older firmware behaves exactly as before.
+
 ### Settings you can change from Home Assistant
 
 Everything above is read-only, and the generator stays that way: the bridge
