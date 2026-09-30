@@ -56,6 +56,51 @@ LOCAL_STATUS_SENSORS: tuple[EnergyTrakSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_key("local_bus_age_seconds"),
     ),
+    # WHAT THE BRIDGE LEARNED ABOUT THIS CONTROLLER. Derived here from the
+    # firmware's one-string commissioning profile, so the ESP32 -- near its
+    # RAM ceiling -- pays for one entity and Home Assistant gets the rest.
+    # They appear only once a bridge with commissioning firmware reports.
+    EnergyTrakSensorDescription(
+        key="controller_family",
+        translation_key="controller_family",
+        icon="mdi:chip",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("controller_family"),
+        attributes_fn=lambda data: {
+            "protocol_revision": data.get("controller_protocol"),
+            "firmware_word": data.get("controller_firmware_word"),
+            "model_word": data.get("controller_model_word"),
+            "profile_captured_at": data.get("profile_captured_at"),
+        },
+    ),
+    EnergyTrakSensorDescription(
+        key="registers_present",
+        translation_key="registers_present",
+        icon="mdi:table-large",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("registers_present"),
+    ),
+    # Alarm inputs by what they read at rest: ok (1, wired), indeterminate
+    # (0 -- shown, never counted as a fault), absent (F). The indeterminate
+    # count is the number on a stranger's generator that used to appear as
+    # phantom faults.
+    EnergyTrakSensorDescription(
+        key="alarm_inputs_indeterminate",
+        translation_key="alarm_inputs_indeterminate",
+        icon="mdi:help-circle-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("alarm_inputs_indeterminate"),
+        attributes_fn=lambda data: {
+            "ok": data.get("alarm_inputs_ok"),
+            "absent": data.get("alarm_inputs_absent"),
+            "unexpected": data.get("alarm_inputs_unexpected"),
+            "baseline_provisional": data.get("alarm_baseline_provisional"),
+        },
+    ),
 )
 
 LOCAL_STATUS_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
@@ -94,5 +139,13 @@ LOCAL_STATUS_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_key("local_bus_healthy"),
+    ),
+    # Whether the bridge has learned this controller yet. Off until the first
+    # commissioning run completes (older firmware never turns it on).
+    EnergyTrakBinarySensorDescription(
+        key="commissioned",
+        translation_key="commissioned",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_key("commissioned"),
     ),
 )

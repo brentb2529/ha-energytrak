@@ -486,6 +486,14 @@
       "kind": "num",
       "api": true
     },
+    "controller_profile": {
+      "object_id": "controller_profile",
+      "esphome_id": "controller_profile",
+      "unit": null,
+      "name": "Controller Profile",
+      "kind": "txt",
+      "api": true
+    },
     "controller_time": {
       "object_id": "controller_time",
       "esphome_id": "controller_time",
@@ -1177,6 +1185,258 @@
     "temperature_circuit_open",
     "unbalanced_load"
   ],
+  "alarm_bits": {
+    "low_oil_pressure": {
+      "reg": 64,
+      "mask": 61440,
+      "value": 0
+    },
+    "high_coolant_temperature": {
+      "reg": 64,
+      "mask": 3840,
+      "value": 0
+    },
+    "low_fuel_level": {
+      "reg": 64,
+      "mask": 240,
+      "value": 0
+    },
+    "water_level_switch": {
+      "reg": 64,
+      "mask": 15,
+      "value": 0
+    },
+    "engine_under_speed": {
+      "reg": 65,
+      "mask": 61440,
+      "value": 0
+    },
+    "engine_over_speed": {
+      "reg": 65,
+      "mask": 3840,
+      "value": 0
+    },
+    "engine_failed_to_start": {
+      "reg": 65,
+      "mask": 240,
+      "value": 0
+    },
+    "engine_failed_to_stop": {
+      "reg": 65,
+      "mask": 15,
+      "value": 0
+    },
+    "generator_low_frequency": {
+      "reg": 66,
+      "mask": 240,
+      "value": 0
+    },
+    "generator_high_frequency": {
+      "reg": 66,
+      "mask": 15,
+      "value": 0
+    },
+    "generator_high_current": {
+      "reg": 67,
+      "mask": 61440,
+      "value": 0
+    },
+    "generator_overload": {
+      "reg": 67,
+      "mask": 3840,
+      "value": 0
+    },
+    "unbalanced_load": {
+      "reg": 67,
+      "mask": 240,
+      "value": 0
+    },
+    "emergency_stop": {
+      "reg": 67,
+      "mask": 15,
+      "value": 0
+    },
+    "maintenance_required": {
+      "reg": 69,
+      "mask": 61440,
+      "value": 0
+    },
+    "battery_high_voltage": {
+      "reg": 69,
+      "mask": 3840,
+      "value": 0
+    },
+    "temperature_circuit_open": {
+      "reg": 69,
+      "mask": 240,
+      "value": 0
+    },
+    "fuel_theft": {
+      "reg": 70,
+      "mask": 61440,
+      "value": 0
+    },
+    "magnetic_pick_up_fault": {
+      "reg": 70,
+      "mask": 3840,
+      "value": 0
+    },
+    "oil_pressure_open_circuit": {
+      "reg": 70,
+      "mask": 240,
+      "value": 0
+    },
+    "auxiliary_input_i": {
+      "reg": 70,
+      "mask": 15,
+      "value": 0
+    },
+    "auxiliary_input_a": {
+      "reg": 71,
+      "mask": 61440,
+      "value": 0
+    },
+    "auxiliary_input_b": {
+      "reg": 71,
+      "mask": 3840,
+      "value": 0
+    },
+    "auxiliary_input_c": {
+      "reg": 71,
+      "mask": 240,
+      "value": 0
+    },
+    "auxiliary_input_d": {
+      "reg": 71,
+      "mask": 15,
+      "value": 0
+    },
+    "auxiliary_input_e": {
+      "reg": 72,
+      "mask": 61440,
+      "value": 0
+    },
+    "auxiliary_input_f": {
+      "reg": 72,
+      "mask": 3840,
+      "value": 0
+    },
+    "auxiliary_input_g": {
+      "reg": 72,
+      "mask": 240,
+      "value": 0
+    },
+    "auxiliary_input_h": {
+      "reg": 72,
+      "mask": 15,
+      "value": 0
+    },
+    "gen_l1_phase_low_voltage": {
+      "reg": 73,
+      "mask": 61440,
+      "value": 0
+    },
+    "gen_l1_phase_high_voltage": {
+      "reg": 73,
+      "mask": 3840,
+      "value": 0
+    },
+    "gen_l2_phase_low_voltage": {
+      "reg": 73,
+      "mask": 240,
+      "value": 0
+    },
+    "gen_l2_phase_high_voltage": {
+      "reg": 73,
+      "mask": 15,
+      "value": 0
+    },
+    "gen_l3_phase_low_voltage": {
+      "reg": 74,
+      "mask": 61440,
+      "value": 0
+    },
+    "gen_l3_phase_high_voltage": {
+      "reg": 74,
+      "mask": 3840,
+      "value": 0
+    },
+    "dg_phase_rotation": {
+      "reg": 74,
+      "mask": 240,
+      "value": 0
+    },
+    "mains_phase_rotation": {
+      "reg": 74,
+      "mask": 15,
+      "value": 0
+    },
+    "fuel_cap_open_circuit": {
+      "reg": 75,
+      "mask": 61440,
+      "value": 0
+    },
+    "extended_over_load_trip": {
+      "reg": 75,
+      "mask": 240,
+      "value": 0
+    },
+    "high_oil_pressure_detected": {
+      "reg": 75,
+      "mask": 15,
+      "value": 0
+    },
+    "alternator_input_lost": {
+      "reg": 76,
+      "mask": 61440,
+      "value": 0
+    },
+    "high_voltage_warning__ph-ph_": {
+      "reg": 76,
+      "mask": 3840,
+      "value": 0
+    },
+    "high_voltage_warning_1__ph-ph_": {
+      "reg": 76,
+      "mask": 240,
+      "value": 0
+    },
+    "high_voltage_warning_2__ph-ph_": {
+      "reg": 76,
+      "mask": 15,
+      "value": 0
+    },
+    "low_voltage_failure_1__ph-ph_": {
+      "reg": 77,
+      "mask": 61440,
+      "value": 0
+    },
+    "low_voltage_failure_2__ph-ph_": {
+      "reg": 77,
+      "mask": 3840,
+      "value": 0
+    },
+    "generator_failed_to_start": {
+      "reg": 79,
+      "mask": 32,
+      "value": 32
+    },
+    "general_notification": {
+      "reg": 79,
+      "mask": 1,
+      "value": 1
+    },
+    "general_warning": {
+      "reg": 79,
+      "mask": 2,
+      "value": 2
+    },
+    "electrical_trip": {
+      "reg": 79,
+      "mask": 4,
+      "value": 4
+    }
+  },
   "controls": {
     "apply_mqtt": {
       "object_id": "apply_mqtt",
@@ -1270,6 +1530,14 @@
       "kind": "button",
       "category": "diagnostic",
       "icon": "mdi:restart"
+    },
+    "run_discovery": {
+      "object_id": "run_discovery",
+      "esphome_id": "run_discovery",
+      "name": "Run Discovery",
+      "kind": "button",
+      "category": "config",
+      "icon": "mdi:radar"
     }
   },
   "snapshot_slots": [

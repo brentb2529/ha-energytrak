@@ -601,9 +601,20 @@ class LocalBridge:
         nothing at all for a user who has both.
         """
         info = self._device_info
+        # The model comes from what the bridge LEARNED, not from what this file
+        # was written against. gc103x is the documented protocol revision with
+        # the alarm block present; anything else is honestly unknown. Firmware
+        # without commissioning keeps the historical label.
+        profile = self.profile()
+        if profile is None:
+            model = "GC-1032"
+        elif profile.get("family") == "gc103x":
+            model = "GC-1030 series"
+        else:
+            model = "Unknown controller"
         out: dict[str, Any] = {
             "make": "Briggs & Stratton",
-            "model": "GC-1032",
+            "model": model,
         }
         if info is not None:
             out["name"] = getattr(info, "friendly_name", None) or getattr(info, "name", None)
@@ -705,6 +716,87 @@ class LocalBridge:
         """Latest value of one entity by object_id, or None."""
         return self._values.get(object_id)
 
+    # --------------------------------------------------------------- profile
+    def profile(self) -> dict[str, Any] | None:
+        """The bridge's commissioning profile, or None on older firmware.
+
+        Published by packages/commissioning.yaml as one JSON string: what
+        this controller answers and how its alarm inputs read at rest. It is
+        the identity of the generator behind the bridge, learned on first
+        contact rather than assumed from the unit this code was written on.
+        """
+        raw = self._values.get("controller_profile")
+        if not isinstance(raw, str) or not raw.startswith("{"):
+            return None
+        try:
+            parsed = json.loads(raw)
+        except ValueError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+
+    def _profile_fields(self) -> dict[str, Any]:
+        """Flatten the profile into keys the entities can read."""
+        p = self.profile()
+        if p is None:
+            return {"commissioned": False}
+        ident: dict[str, Any] = {
+            "controller_protocol": p.get("proto"),
+            "controller_firmware_word": p.get("fw"),
+            "controller_model_word": p.get("model"),
+        }
+        # FFFF is the firmware's "did not answer"; say so rather than show it.
+        for k, v in ident.items():
+            ident[k] = "absent" if v == "FFFF" else (f"0x{v}" if isinstance(v, str) else v)
+        alarm = p.get("alarm") or {}
+        return {
+            "commissioned": True,
+            "controller_family": p.get("family"),
+            **ident,
+            "registers_present": p.get("present"),
+            "alarm_inputs_ok": alarm.get("ok"),
+            "alarm_inputs_indeterminate": alarm.get("indeterminate"),
+            "alarm_inputs_absent": alarm.get("absent"),
+            "alarm_inputs_unexpected": alarm.get("unexpected"),
+            "alarm_baseline_provisional": alarm.get("provisional"),
+            "profile_captured_at": p.get("captured"),
+        }
+
+    def _asserted_alarms(self) -> list[str]:
+        """Alarms to count as active, under the four-state rule when possible.
+
+        The firmware's per-alarm entities apply genmon's decode: a nibble of
+        0 is a fault. That rule has never been confirmed against a real alarm
+        on this hardware, and on a healthy unit it declares ~15 conditions
+        faulted -- inputs that are simply not wired. With a commissioning
+        baseline (profile alarm.base) and the contract's alarm_bits, this
+        applies docs/alarm-encoding.md instead: a condition whose nibble read
+        F at rest is NOT PRESENT and one that read 0 at rest is INDETERMINATE;
+        neither is ever counted. Only a condition that read 1 at rest and now
+        reads asserted is a fault -- an observed transition, which no reading
+        of the encoding can explain away.
+
+        Older firmware (no profile) or an alarm outside the baseline block
+        (the 0x004F status-word bits) falls back to the raw decode.
+        """
+        base = ((self.profile() or {}).get("alarm") or {}).get("base")
+        bits = (self._contract or {}).get("alarm_bits") or {}
+        usable = isinstance(base, str) and len(base) == 56
+        out: list[str] = []
+        for oid in self._alarm_oids:
+            if not bool(self._values.get(oid)):
+                continue
+            b = bits.get(oid) if usable else None
+            if b and 0x40 <= b["reg"] <= 0x4D:
+                i = (b["reg"] - 0x40) * 4
+                try:
+                    at_rest = int(base[i:i + 4], 16) & b["mask"]
+                except ValueError:
+                    at_rest = None
+                if at_rest is not None and (at_rest == b["value"] or at_rest == b["mask"]):
+                    continue  # indeterminate at rest, or not present: not a fault
+            out.append(oid)
+        return out
+
     @property
     def mac(self) -> str | None:
         """MAC address, once connected. Stable identity across DHCP changes."""
@@ -726,9 +818,7 @@ class LocalBridge:
                 out[key] = spec["value"]
                 continue
             if op in ("count_true", "join_true"):
-                asserted = [
-                    oid for oid in self._alarm_oids if bool(self._values.get(oid))
-                ]
+                asserted = self._asserted_alarms()
                 if op == "count_true":
                     out[key] = len(asserted)
                 else:

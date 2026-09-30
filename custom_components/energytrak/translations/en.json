@@ -653,6 +653,18 @@
       },
       "status_register_raw": {
         "name": "Status Register Raw"
+      },
+      "controller_family": {
+        "name": "Controller family"
+      },
+      "registers_present": {
+        "name": "Registers present"
+      },
+      "alarm_inputs_indeterminate": {
+        "name": "Alarm inputs indeterminate"
+      },
+      "controller_profile": {
+        "name": "Controller Profile"
       }
     },
     "binary_sensor": {
@@ -874,6 +886,9 @@
       },
       "infohub_polling": {
         "name": "InfoHub Polling"
+      },
+      "commissioned": {
+        "name": "Commissioned"
       }
     }
   }

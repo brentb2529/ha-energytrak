@@ -62,6 +62,9 @@
   "controller_clock_skew": {
     "name": "Controller Clock Skew"
   },
+  "controller_profile": {
+    "name": "Controller Profile"
+  },
   "controller_time": {
     "name": "Controller Time"
   },

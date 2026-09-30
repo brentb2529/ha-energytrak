@@ -54,6 +54,10 @@ UNITS = {
 ALWAYS_ENABLED = {
     "alarm_block", "alarm_block_changes", "alarm_block_unexpected_value",
     "infohub_polling", "infohub_registers_served",
+    # The identity of the generator behind the bridge -- what commissioning
+    # learned. The integration derives its own entities from it, but the raw
+    # string is what a person or a bug report needs.
+    "controller_profile",
 }
 
 def title(key: str, given: str | None) -> str:
