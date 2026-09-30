@@ -586,6 +586,7 @@ class LocalBridge:
                 out[key] = _to_cloud_vocabulary(key, value)
 
         out.update(self._derive())
+        out.update(self._profile_fields())
         out["telemetry_source"] = "local"
         out["local_bus_age_seconds"] = self.bus_age
         return out
@@ -608,7 +609,7 @@ class LocalBridge:
         profile = self.profile()
         if profile is None:
             model = "GC-1032"
-        elif profile.get("family") == "gc103x":
+        elif profile.get("fam") == "gc103x":
             model = "GC-1030 series"
         else:
             model = "Unknown controller"
@@ -747,19 +748,43 @@ class LocalBridge:
         # FFFF is the firmware's "did not answer"; say so rather than show it.
         for k, v in ident.items():
             ident[k] = "absent" if v == "FFFF" else (f"0x{v}" if isinstance(v, str) else v)
-        alarm = p.get("alarm") or {}
+        # The alarm-input census is computed HERE from the baseline block, not
+        # sent by the firmware: the profile has to stay under Home Assistant's
+        # 255-character sensor state limit, and four counts a consumer can
+        # derive are the first thing to drop. Per nibble at rest: F not
+        # present, 1 wired and ok, 0 indeterminate, anything else unexpected.
+        base = self._baseline(p)
+        census = {"ok": 0, "indeterminate": 0, "absent": 0, "unexpected": 0}
+        if base:
+            for word in (int(base[i:i + 4], 16) for i in range(0, 56, 4)):
+                for shift in (12, 8, 4, 0):
+                    nib = (word >> shift) & 0xF
+                    census["absent" if nib == 0xF else "ok" if nib == 0x1
+                           else "indeterminate" if nib == 0x0 else "unexpected"] += 1
         return {
             "commissioned": True,
-            "controller_family": p.get("family"),
+            "controller_family": p.get("fam"),
             **ident,
-            "registers_present": p.get("present"),
-            "alarm_inputs_ok": alarm.get("ok"),
-            "alarm_inputs_indeterminate": alarm.get("indeterminate"),
-            "alarm_inputs_absent": alarm.get("absent"),
-            "alarm_inputs_unexpected": alarm.get("unexpected"),
-            "alarm_baseline_provisional": alarm.get("provisional"),
-            "profile_captured_at": p.get("captured"),
+            "registers_present": p.get("n"),
+            "alarm_inputs_ok": census["ok"] if base else None,
+            "alarm_inputs_indeterminate": census["indeterminate"] if base else None,
+            "alarm_inputs_absent": census["absent"] if base else None,
+            "alarm_inputs_unexpected": census["unexpected"] if base else None,
+            "alarm_baseline_provisional": bool(p.get("prov")),
+            "profile_captured_at": p.get("t"),
         }
+
+    @staticmethod
+    def _baseline(profile: dict[str, Any] | None) -> str | None:
+        """The 56-hex-digit alarm block at rest, or None if absent/malformed."""
+        base = (profile or {}).get("base")
+        if not isinstance(base, str) or len(base) != 56:
+            return None
+        try:
+            int(base, 16)
+        except ValueError:
+            return None
+        return base
 
     def _asserted_alarms(self) -> list[str]:
         """Alarms to count as active, under the four-state rule when possible.
@@ -778,21 +803,17 @@ class LocalBridge:
         Older firmware (no profile) or an alarm outside the baseline block
         (the 0x004F status-word bits) falls back to the raw decode.
         """
-        base = ((self.profile() or {}).get("alarm") or {}).get("base")
+        base = self._baseline(self.profile())
         bits = (self._contract or {}).get("alarm_bits") or {}
-        usable = isinstance(base, str) and len(base) == 56
         out: list[str] = []
         for oid in self._alarm_oids:
             if not bool(self._values.get(oid)):
                 continue
-            b = bits.get(oid) if usable else None
+            b = bits.get(oid) if base else None
             if b and 0x40 <= b["reg"] <= 0x4D:
                 i = (b["reg"] - 0x40) * 4
-                try:
-                    at_rest = int(base[i:i + 4], 16) & b["mask"]
-                except ValueError:
-                    at_rest = None
-                if at_rest is not None and (at_rest == b["value"] or at_rest == b["mask"]):
+                at_rest = int(base[i:i + 4], 16) & b["mask"]
+                if at_rest == b["value"] or at_rest == b["mask"]:
                     continue  # indeterminate at rest, or not present: not a fault
             out.append(oid)
         return out

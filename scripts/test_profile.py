@@ -38,10 +38,10 @@ def bridge(profile, values):
 
 # Brent's real profile, captured 2026-09-29 (base = the August baseline block).
 BASE = "11001111FF111111F0F0111F010000111001111100000F011F1111FE"
-PROFILE = {"v":1,"family":"gc103x","proto":"8003","fw":"4113","model":"FFFF","present":87,
-           "map":"FFFFFFFFFFFFFFFF007FFFFF00000000","alt":"00000000",
-           "alarm":{"absent":8,"ok":30,"indeterminate":17,"unexpected":1,"provisional":True,"base":BASE},
-           "battery_ok":True,"utility_ok":True,"captured":1790737519}
+PROFILE = {"v":2,"fam":"gc103x","proto":"8003","fw":"4113","model":"FFFF","n":87,
+           "map":"FFFFFFFFFFFFFFFF007FFFFF00000000","alt":"00000000","base":BASE,
+           "prov":1,"batt":1,"util":1,"t":1790737519}
+check("v2 profile string fits Home Assistant's 255-char state limit", len(json.dumps(PROFILE, separators=(",",":"))) < 255, True)
 
 # --- flattening -------------------------------------------------------------
 f = bridge(PROFILE, {})._profile_fields()
@@ -50,14 +50,19 @@ check("family", f["controller_family"], "gc103x")
 check("protocol shown as hex", f["controller_protocol"], "0x8003")
 check("model word FFFF shown as absent", f["controller_model_word"], "absent")
 check("registers present", f["registers_present"], 87)
-check("indeterminate count", f["alarm_inputs_indeterminate"], 17)
+check("indeterminate count (derived from base)", f["alarm_inputs_indeterminate"], 17)
+check("ok / absent / unexpected (derived from base)",
+      (f["alarm_inputs_ok"], f["alarm_inputs_absent"], f["alarm_inputs_unexpected"]), (30, 8, 1))
+check("baseline flagged provisional", f["alarm_baseline_provisional"], True)
 check("no profile -> commissioned False only", bridge(None, {})._profile_fields(), {"commissioned": False})
 check("garbage profile string is ignored", bridge(None, {"controller_profile": "not commissioned"}).profile(), None)
 
 # --- device model -------------------------------------------------------------
 check("model from learned family", bridge(PROFILE, {}).device_identity()["model"], "GC-1030 series")
 check("unknown family is not called a GC-1032",
-      bridge({**PROFILE, "family":"unknown"}, {}).device_identity()["model"], "Unknown controller")
+      bridge({**PROFILE, "fam":"unknown"}, {}).device_identity()["model"], "Unknown controller")
+check("snapshot is None while the bus is not healthy (trust decision unchanged)",
+      bridge(PROFILE, {}).snapshot(), None)
 check("old firmware keeps the historical label", bridge(None, {}).device_identity()["model"], "GC-1032")
 
 # --- four-state alarm rule ----------------------------------------------------
@@ -95,7 +100,17 @@ d = counting_all(None, vals)._derive()
 check("without a profile the raw decode is unchanged", d["active_alarm_count"], 3)
 
 # A truncated or malformed baseline must fall back to the raw decode, never crash.
-d = counting_all({**PROFILE, "alarm": {**PROFILE["alarm"], "base": "1100"}}, vals)._derive()
+d = counting_all({**PROFILE, "base": "1100"}, vals)._derive()
 check("malformed baseline falls back to raw decode", d["active_alarm_count"], 3)
+d = counting_all({**PROFILE, "base": "zz" * 28}, vals)._derive()
+check("non-hex baseline falls back to raw decode", d["active_alarm_count"], 3)
+
+# --- the derived keys ride in the snapshot --------------------------------
+live = bridge(PROFILE, {"bus_healthy": True, "bus_age": 1.0})
+live._last_rx = __import__("time").monotonic()
+snap = live.snapshot() or {}
+check("snapshot carries commissioned/family/registers/indeterminate",
+      (snap.get("commissioned"), snap.get("controller_family"), snap.get("registers_present"), snap.get("alarm_inputs_indeterminate")),
+      (True, "gc103x", 87, 17))
 
 print("PASS" if ok else "FAIL"); sys.exit(0 if ok else 1)
