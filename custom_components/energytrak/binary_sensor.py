@@ -56,6 +56,9 @@ class EnergyTrakBinarySensorDescription(BinarySensorEntityDescription):
     # Created even when the value is missing: these are the entities that
     # explain why other data is absent, so they must exist in exactly that case.
     always: bool = False
+    # Decoded alarms: not created until the bridge has commissioned, so the
+    # profile can decide whether this input exists on this controller.
+    hold_until_commissioned: bool = False
 
 
 BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = (
@@ -168,6 +171,20 @@ class EnergyTrakBinarySensor(EnergyTrakEntity, BinarySensorEntity):
         """Initialise the binary sensor."""
         super().__init__(coordinator, site_id, description.key)
         self.entity_description = description
+        # SHAPED BY THE BOARD. A decoded alarm whose input the commissioning
+        # profile says is not wired (indeterminate), not fitted (absent), or
+        # not a family the decode was written for (untrusted) is created
+        # disabled. It still exists -- a person can enable it and see the raw
+        # decode -- but it does not sit on a stranger's device page as a
+        # "problem" that was never real. Decided once, at creation, which is
+        # why creation waits for the profile (hold_until_commissioned).
+        if self._alarm_input_state in ("indeterminate", "absent", "untrusted", "unexpected"):
+            self._attr_entity_registry_enabled_default = False
+
+    @property
+    def _alarm_input_state(self) -> str | None:
+        states = self.site_data.get("alarm_input_states")
+        return states.get(self.entity_description.key) if isinstance(states, dict) else None
 
     @property
     def is_on(self) -> bool | None:
@@ -181,6 +198,8 @@ class EnergyTrakBinarySensor(EnergyTrakEntity, BinarySensorEntity):
         attributes = dict(self.base_state_attributes)
         if self.entity_description.attributes_fn is not None:
             attributes.update(self.entity_description.attributes_fn(self.site_data))
+        if (state := self._alarm_input_state) is not None:
+            attributes["alarm_input"] = state
         return attributes
 
     @property

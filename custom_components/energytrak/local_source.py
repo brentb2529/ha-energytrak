@@ -587,6 +587,14 @@ class LocalBridge:
 
         out.update(self._derive())
         out.update(self._profile_fields())
+        # Whether this firmware commissions at all, and whether it has yet.
+        # Alarm entities are held back while a commissioning-capable bridge
+        # has not finished its first probe, so the profile can shape them
+        # (see hold_until_commissioned). Older firmware never reports the
+        # profile entity, and its alarms are created at once as before.
+        supported = "controller_profile" in self._values
+        out["commissioning_supported"] = supported
+        out["alarm_entities_pending"] = supported and not out.get("commissioned", False)
         out["telemetry_source"] = "local"
         out["local_bus_age_seconds"] = self.bus_age
         return out
@@ -764,6 +772,7 @@ class LocalBridge:
         return {
             "commissioned": True,
             "controller_family": p.get("fam"),
+            "alarm_input_states": self._alarm_input_states(p),
             **ident,
             "registers_present": p.get("n"),
             "alarm_inputs_ok": census["ok"] if base else None,
@@ -773,6 +782,43 @@ class LocalBridge:
             "alarm_baseline_provisional": bool(p.get("prov")),
             "profile_captured_at": p.get("t"),
         }
+
+    def _alarm_input_states(self, profile: dict[str, Any]) -> dict[str, str]:
+        """How each decoded alarm's input read at rest on THIS controller.
+
+        ok            nibble 1 -- wired, a real signal if it ever asserts
+        indeterminate nibble 0 -- the decode would call it faulted now; shown
+                                  disabled, never counted
+        absent        nibble F -- not fitted
+        unexpected    any other value
+        untrusted     the family is not one the decode was written for, so
+                      every decoded alarm is suspect; only the raw block is
+                      believed
+
+        This is what lets the entity set shape itself to the board at first
+        contact instead of presenting one generator's inputs as everyone's.
+        """
+        bits = (self._contract or {}).get("alarm_bits") or {}
+        if profile.get("fam") != "gc103x":
+            return {oid: "untrusted" for oid in bits}
+        base = self._baseline(profile)
+        if not base:
+            return {}
+        out: dict[str, str] = {}
+        for oid, b in bits.items():
+            if not 0x40 <= b["reg"] <= 0x4D:
+                continue  # status-word bits: active-high, no rest state to read
+            i = (b["reg"] - 0x40) * 4
+            at_rest = int(base[i:i + 4], 16) & b["mask"]
+            if at_rest == b["mask"]:
+                out[oid] = "absent"
+            elif at_rest == b["value"]:
+                out[oid] = "indeterminate"
+            elif at_rest == (0x1111 & b["mask"]):
+                out[oid] = "ok"
+            else:
+                out[oid] = "unexpected"
+        return out
 
     @staticmethod
     def _baseline(profile: dict[str, Any] | None) -> str | None:
@@ -803,7 +849,13 @@ class LocalBridge:
         Older firmware (no profile) or an alarm outside the baseline block
         (the 0x004F status-word bits) falls back to the raw decode.
         """
-        base = self._baseline(self.profile())
+        profile = self.profile()
+        if profile is not None and profile.get("fam") != "gc103x":
+            # Not a controller the decode was written for. Counting its bits
+            # would present a guess as a fault; the raw alarm block and its
+            # change watch are the only honest alarm signals here.
+            return []
+        base = self._baseline(profile)
         bits = (self._contract or {}).get("alarm_bits") or {}
         out: list[str] = []
         for oid in self._alarm_oids:

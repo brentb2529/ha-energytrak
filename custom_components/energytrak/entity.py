@@ -51,6 +51,14 @@ def async_setup_reported_entities(
                 token = (site_id, description.key)
                 if token in created:
                     continue
+                # An alarm entity created before the bridge has commissioned
+                # cannot be shaped by the profile (enabled or not, which
+                # input state). Hold it until the first probe has run; older
+                # firmware never sets the flag and is created at once.
+                if getattr(description, "hold_until_commissioned", False) and data.get(
+                    "alarm_entities_pending"
+                ):
+                    continue
                 if not getattr(description, "always", False):
                     try:
                         if description.value_fn(data) is None:

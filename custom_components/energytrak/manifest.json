@@ -15,7 +15,7 @@
   "requirements": [
     "aioesphomeapi>=24.0.0"
   ],
-  "version": "1.26.2",
+  "version": "1.27.0",
   "zeroconf": [
     {
       "type": "_esphomelib._tcp.local.",

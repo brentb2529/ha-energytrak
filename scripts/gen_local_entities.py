@@ -142,10 +142,14 @@ out += [")", "", "",
         "# collapsed all of them into one 'fault' string.",
         "LOCAL_BINARY_SENSORS: tuple[EnergyTrakBinarySensorDescription, ...] = ("]
 alarms = set(C["alarm_keys"])
+# Every decoded alarm (not only the counted ones) waits for commissioning so
+# the profile can shape it; see hold_until_commissioned in binary_sensor.py.
+decoded = set(C.get("alarm_bits", {}))
 for key, meta in bins:
     dc = "        device_class=BinarySensorDeviceClass.PROBLEM,\n" if key in alarms else ""
+    hold = "        hold_until_commissioned=True,\n" if key in decoded else ""
     out.append(f'    EnergyTrakBinarySensorDescription(\n        key="{key}",\n'
-               f'        translation_key="{key}",\n{dc}'
+               f'        translation_key="{key}",\n{dc}{hold}'
                f'        value_fn=_key("{key}"),\n    ),')
 out += [")", ""]
 (HERE / "custom_components/energytrak/local_entities.py").write_text("\n".join(out))

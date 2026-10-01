@@ -105,6 +105,26 @@ check("malformed baseline falls back to raw decode", d["active_alarm_count"], 3)
 d = counting_all({**PROFILE, "base": "zz" * 28}, vals)._derive()
 check("non-hex baseline falls back to raw decode", d["active_alarm_count"], 3)
 
+# --- per-alarm input states shape the entities ------------------------------
+st = bridge(PROFILE, {})._profile_fields()["alarm_input_states"]
+check("indeterminate input classified", st[zero], "indeterminate")
+check("absent input classified", st[absent], "absent")
+check("wired input classified ok", st[wired], "ok")
+check("status-word bits have no rest state", any(bits[k]["reg"] > 0x4D and k in st for k in bits), False)
+unk = bridge({**PROFILE, "fam":"unknown"}, {})
+check("unknown family: every decoded alarm is untrusted", set(unk._profile_fields()["alarm_input_states"].values()), {"untrusted"})
+unk._alarm_oids = decoded; unk._values.update(vals)
+check("unknown family: nothing is counted even when asserted", unk._derive()["active_alarm_count"], 0)
+
+# --- alarm entities wait for commissioning on capable firmware ---------------
+pending = bridge(None, {"controller_profile": "not commissioned", "bus_healthy": True, "bus_age": 1.0})
+pending._last_rx = __import__("time").monotonic()
+ps = pending.snapshot() or {}
+check("capable but not yet commissioned -> alarm entities pending", (ps.get("commissioning_supported"), ps.get("alarm_entities_pending")), (True, True))
+old = bridge(None, {"bus_healthy": True, "bus_age": 1.0}); old._last_rx = __import__("time").monotonic()
+os_ = old.snapshot() or {}
+check("old firmware (no profile entity) -> not pending", (os_.get("commissioning_supported"), os_.get("alarm_entities_pending")), (False, False))
+
 # --- the derived keys ride in the snapshot --------------------------------
 live = bridge(PROFILE, {"bus_healthy": True, "bus_age": 1.0})
 live._last_rx = __import__("time").monotonic()
