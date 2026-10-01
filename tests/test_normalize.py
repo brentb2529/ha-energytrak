@@ -623,6 +623,30 @@ check("the source field is named", r["engine_hours_source"],
 check("50.08 h fits a unit commissioned five days prior",
       r["engine_hours_implausible"], False)
 
+# THE SAME UNIT, 2026-09-30, after its InfoHub firmware moved 86q -> 87d.
+# cleanState.engineRuntimeHours now reads 4 while the monitor's
+# EngineHoursTP reads 12611. engineRuntimeHours is tried first, so the
+# device card showed 0.12 h -- a generator with seven minutes on it. A
+# runtime counter never decreases: the near-zero sibling is the reset one.
+def reset_counter_doc(ts):
+    # cleanState rides in details.state (see device_doc); the monitor's own
+    # counter is in the raw DeviceEventData block, as on the real unit.
+    return device_doc(
+        clean={"generatorRunning": b(False), "state": s("fault"), "engineRuntimeHours": i(4)},
+        raw={"Event": m({
+            "MessageEventData": m({"ActualDateUTC": s(ts)}),
+            "DeviceEventData": m({"EngineHoursTP": s("12611"), "BatteryVoltageTP": s("13.528")}),
+        })},
+    )
+r = N.normalize_site("s", None, [reset_counter_doc(fresh)], stale_threshold_seconds=900, now=NOW,
+                     site_doc=site_commissioned("2026-07-24T16:18:27"))
+check("a reset counter loses to the one that kept counting",
+      r["engine_hours"], round(12611 * 163 / 5283, 2))
+check("...and the source says which", r["engine_hours_source"],
+      "Event.DeviceEventData.EngineHoursTP")
+check("...and the disagreement is still reported",
+      (r["engine_hours_disagreement_ratio"] or 0) > 1000, True)
+
 # The whole point: no EquipmentEventData means no output measurements. The
 # off-means-zero shortcut must not manufacture them — every one of these
 # would otherwise become an entity holding a confident, invented 0.

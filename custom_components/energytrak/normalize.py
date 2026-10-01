@@ -632,6 +632,21 @@ def normalize_site(
         if low > 0 and high / low > 1.05 and high - low > 0.5:
             engine_hours_disagreement = round(high / low, 2)
 
+    # A RESET COUNTER LOSES. The sources are tried in a fixed order, and the
+    # first non-zero one wins -- which is wrong when that one has restarted
+    # from nothing while another kept counting. A runtime counter never
+    # decreases, so when the chosen value is under an hour and a sibling is
+    # more than ten times it, the chosen one is the reset. Seen on a
+    # cellular InfoHub 2026-09-30: after its firmware moved 86q -> 87d,
+    # cleanState.engineRuntimeHours read 4 (0.12 h) while the monitor's
+    # EngineHoursTP read 12611, and the device card showed a generator with
+    # seven minutes on it. The disagreement is still reported above; this
+    # only stops the display from choosing the absurd one.
+    if engine_hours is not None and len(candidates_in_hours) > 1:
+        best_path, best = max(candidates_in_hours.items(), key=lambda kv: kv[1])
+        if engine_hours < 1.0 and best >= 10 * max(engine_hours, 0.01):
+            engine_hours, engine_hours_source = round(best, 2), best_path
+
     # A unit cannot have run for longer than it has existed. This does not
     # correct the value — a generator retrofitted with a monitor legitimately
     # carries hours predating its EnergyTrak commissioning — but a reading
