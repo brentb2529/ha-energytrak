@@ -1,0 +1,53 @@
+blueprint:
+  name: "Generator: FAILED TO START"
+  description: >-
+    The controller reports a failed start (either of its two failed-to-start
+    bits). You have no standby power; check the starting battery first. Only
+    an input the commissioning profile marked "ok" can trigger this.
+  domain: automation
+  source_url: https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/generator_failed_to_start.yaml
+  input:
+    generator:
+      name: Generator
+      selector:
+        device:
+          integration: energytrak
+    notify:
+      name: Notify service
+      default: notify.notify
+      selector:
+        text: {}
+
+mode: single
+
+trigger_variables:
+  dev: !input generator
+
+triggers:
+  - trigger: template
+    value_template: >-
+      {% set ns = namespace(hit=false) %}
+      {% for e in expand(device_entities(dev)) %}
+        {% if e.attributes.energytrak_field in ['engine_failed_to_start','generator_failed_to_start'] and e.state == 'on'
+              and (e.attributes.alarm_input is not defined or e.attributes.alarm_input == 'ok') %}
+          {% set ns.hit = true %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.hit }}
+
+actions:
+  - action: !input notify
+    data:
+      title: GENERATOR FAILED TO START
+      message: The engine did not come up when commanded. You have no standby power. Check the starting battery first.
+      data:
+        push:
+          interruption-level: critical
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+  - action: persistent_notification.create
+    data:
+      title: GENERATOR FAILED TO START
+      message: The engine did not come up when commanded. You have no standby power. Check the starting battery first.

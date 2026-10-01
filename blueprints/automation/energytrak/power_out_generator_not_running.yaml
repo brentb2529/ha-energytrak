@@ -1,0 +1,87 @@
+blueprint:
+  name: "Generator: power out and the generator is NOT running"
+  description: >-
+    The one that matters. The utility has been down for a minute and the engine
+    is not turning — no automatic transfer happened. Observes two facts rather
+    than trusting the controller to diagnose itself: a selector left in OFF or
+    MANUAL, a battery that cannot crank, or a wedged controller all go dark
+    with every fault bit clear. Pages again ten minutes later if nothing has
+    changed. Pick your generator device and a notify service; everything else
+    is found from the device.
+  domain: automation
+  source_url: https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/power_out_generator_not_running.yaml
+  input:
+    generator:
+      name: Generator
+      description: The EnergyTrak generator device (bridge or cloud).
+      selector:
+        device:
+          integration: energytrak
+    notify:
+      name: Notify service
+      description: e.g. notify.mobile_app_your_phone. Critical push data is included for iOS.
+      default: notify.notify
+      selector:
+        text: {}
+
+mode: single
+
+trigger_variables:
+  dev: !input generator
+
+triggers:
+  - trigger: template
+    value_template: >-
+      {% set ents = expand(device_entities(dev)) %}
+      {% set out = ents | selectattr('attributes.energytrak_field','eq','utility_power_failure') | map(attribute='state') | first | default('off') %}
+      {% set run = ents | selectattr('attributes.energytrak_field','eq','engine_running') | map(attribute='state') | first | default('unknown') %}
+      {{ out == 'on' and run == 'off' }}
+    for:
+      seconds: 60
+
+variables:
+  dev: !input generator
+  mode_txt: >-
+    {{ expand(device_entities(dev)) | selectattr('attributes.energytrak_field','eq','operation_mode') | map(attribute='state') | first | default('unknown') }}
+  batt: >-
+    {{ expand(device_entities(dev)) | selectattr('attributes.energytrak_field','eq','battery_voltage') | map(attribute='state') | first | default('?') }}
+
+actions:
+  - action: !input notify
+    data:
+      title: "POWER OUT — GENERATOR IS NOT RUNNING"
+      message: >-
+        The utility has been down for a minute and the engine is not turning.
+        Mode is {{ mode_txt }}, battery {{ batt }} V. The house is not being carried.
+      data:
+        push:
+          interruption-level: critical
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+  - action: persistent_notification.create
+    data:
+      notification_id: energytrak_power_out_no_gen
+      title: "POWER OUT — generator is not running"
+      message: "Utility down, engine not turning. Mode {{ mode_txt }}, battery {{ batt }} V."
+  - delay:
+      minutes: 10
+  - condition: template
+    alias: Still dark ten minutes later
+    value_template: >-
+      {% set ents = expand(device_entities(dev)) %}
+      {% set out = ents | selectattr('attributes.energytrak_field','eq','utility_power_failure') | map(attribute='state') | first | default('off') %}
+      {% set run = ents | selectattr('attributes.energytrak_field','eq','engine_running') | map(attribute='state') | first | default('unknown') %}
+      {{ out == 'on' and run == 'off' }}
+  - action: !input notify
+    data:
+      title: "STILL NO GENERATOR — 10 minutes"
+      message: The utility is still down and the engine still is not running.
+      data:
+        push:
+          interruption-level: critical
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0

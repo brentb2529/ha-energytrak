@@ -134,6 +134,30 @@ the four-state rule: an alarm input that read `F` at rest is not fitted, one
 that read `0` at rest is indeterminate, and neither is counted; only a real
 `1 → 0` transition is. Older firmware behaves exactly as before.
 
+### Alerts: six blueprints, two inputs each
+
+The alerts that have run on the author's generator for a season are shipped
+as Home Assistant **blueprints**. Each asks for two things — your generator
+**device** and a **notify service** — and finds every entity from the device
+at runtime, so there is nothing to type and nothing to rename. Alarm inputs
+the bridge's commissioning profile marked as not wired are ignored
+automatically.
+
+| Alert | |
+| --- | --- |
+| Power out and the generator is NOT running (critical) | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/power_out_generator_not_running.yaml) |
+| CRITICAL alarm — shutdown-class fault (critical) | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/critical_generator_alarm.yaml) |
+| FAILED TO START (critical) | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/generator_failed_to_start.yaml) |
+| NOT IN AUTO, and back in AUTO | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/generator_not_in_auto.yaml) |
+| Bridge or generator bus went dark | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/bridge_or_bus_dark.yaml) |
+| Started unexpectedly | [Import](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/generator_started_unexpectedly.yaml) |
+
+*Power out & not running* observes two facts (utility down, engine not
+turning after 60 s) rather than trusting the controller to diagnose itself —
+a selector left in OFF, a flat battery and a hung controller all go dark with
+every fault bit clear. Critical pushes include iOS critical-alert data; grant
+the Companion app "Critical Alerts" for them to break through Do Not Disturb.
+
 ### Settings you can change from Home Assistant
 
 Everything above is read-only, and the generator stays that way: the bridge

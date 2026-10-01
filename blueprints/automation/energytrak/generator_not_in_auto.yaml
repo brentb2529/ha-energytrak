@@ -1,0 +1,93 @@
+blueprint:
+  name: "Generator: NOT IN AUTO (and back in AUTO)"
+  description: >-
+    A standby generator that is not in AUTO will not start when the utility
+    fails — the quietest possible failure, usually a manual test nobody
+    switched back. Pages three minutes after the mode leaves AUTO, repeats
+    every two hours while it stays that way, and confirms when it returns.
+    A scheduled exercise is NOT a non-AUTO mode (the controller reports the
+    selector and a running exercise in the same field); unknown/unavailable
+    never counts either way.
+  domain: automation
+  source_url: https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/generator_not_in_auto.yaml
+  input:
+    generator:
+      name: Generator
+      selector:
+        device:
+          integration: energytrak
+    notify:
+      name: Notify service
+      default: notify.notify
+      selector:
+        text: {}
+
+mode: single
+
+trigger_variables:
+  dev: !input generator
+
+triggers:
+  - trigger: template
+    id: not_auto
+    value_template: >-
+      {% set ents = expand(device_entities(dev)) %}
+      {% set mode = ents | selectattr('attributes.energytrak_field','eq','operation_mode') | map(attribute='state') | first | default('unknown') | lower %}
+      {% set ex = ents | selectattr('attributes.energytrak_field','in',['exercising','scheduled_exercise_in_progress']) | map(attribute='state') | list %}
+      {{ mode not in ['auto','automatic','unknown','unavailable','none',''] and 'on' not in ex }}
+    for:
+      minutes: 3
+  - trigger: time_pattern
+    id: repeat
+    hours: "/2"
+  - trigger: template
+    id: back
+    value_template: >-
+      {% set ents = expand(device_entities(dev)) %}
+      {% set mode = ents | selectattr('attributes.energytrak_field','eq','operation_mode') | map(attribute='state') | first | default('unknown') | lower %}
+      {{ mode in ['auto','automatic'] }}
+    for:
+      seconds: 20
+
+variables:
+  dev: !input generator
+  mode_txt: >-
+    {{ expand(device_entities(dev)) | selectattr('attributes.energytrak_field','eq','operation_mode') | map(attribute='state') | first | default('unknown') }}
+  not_auto_now: >-
+    {% set ents = expand(device_entities(dev)) %}
+    {% set mode = ents | selectattr('attributes.energytrak_field','eq','operation_mode') | map(attribute='state') | first | default('unknown') | lower %}
+    {% set ex = ents | selectattr('attributes.energytrak_field','in',['exercising','scheduled_exercise_in_progress']) | map(attribute='state') | list %}
+    {{ mode not in ['auto','automatic','unknown','unavailable','none',''] and 'on' not in ex }}
+
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.id in ['not_auto','repeat'] and not_auto_now }}"
+        sequence:
+          - action: !input notify
+            data:
+              title: Generator is NOT in AUTO
+              message: "Mode is {{ mode_txt }}. The generator will NOT start if the power goes out. Put the controller back to AUTO."
+              data:
+                push:
+                  interruption-level: time-sensitive
+          - action: persistent_notification.create
+            data:
+              notification_id: energytrak_not_in_auto
+              title: Generator is NOT in AUTO
+              message: "Mode is {{ mode_txt }}. It will not start on a utility failure until it is returned to AUTO."
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'back' }}"
+        sequence:
+          - action: persistent_notification.dismiss
+            data:
+              notification_id: energytrak_not_in_auto
+          - action: !input notify
+            data:
+              title: Generator is ARMED (back in AUTO)
+              message: The controller is in AUTO again and will start automatically if the power goes out.
+              data:
+                push:
+                  interruption-level: active

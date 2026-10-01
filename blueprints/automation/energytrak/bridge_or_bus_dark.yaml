@@ -1,0 +1,77 @@
+blueprint:
+  name: "Generator bridge: bridge or generator bus went dark"
+  description: >-
+    Two different failures with different fixes, kept apart on purpose. The
+    bridge unreachable for 5 minutes is the board — power or Wi-Fi; Home
+    Assistant falls back to cloud data. The bridge online but the controller
+    silent on RS-485 for 5 minutes is the bus — pair, termination, the
+    controller; local readings freeze and alarm detection is suppressed, which
+    is exactly the state a naive "is it online" check calls healthy.
+  domain: automation
+  source_url: https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/bridge_or_bus_dark.yaml
+  input:
+    generator:
+      name: Generator
+      selector:
+        device:
+          integration: energytrak
+    notify:
+      name: Notify service
+      default: notify.notify
+      selector:
+        text: {}
+
+mode: single
+
+trigger_variables:
+  dev: !input generator
+
+triggers:
+  - trigger: template
+    id: bridge
+    value_template: >-
+      {{ expand(device_entities(dev)) | selectattr('attributes.energytrak_field','eq','local_bridge_connected') | map(attribute='state') | first | default('on') == 'off' }}
+    for:
+      minutes: 5
+  - trigger: template
+    id: bus
+    value_template: >-
+      {% set ents = expand(device_entities(dev)) %}
+      {% set br = ents | selectattr('attributes.energytrak_field','eq','local_bridge_connected') | map(attribute='state') | first | default('on') %}
+      {% set bus = ents | selectattr('attributes.energytrak_field','eq','local_bus_healthy') | map(attribute='state') | first | default('on') %}
+      {{ br == 'on' and bus == 'off' }}
+    for:
+      minutes: 5
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: bridge
+        sequence:
+          - action: !input notify
+            data:
+              title: Generator bridge unreachable
+              message: "The bridge has not answered for 5 minutes. Check its power and Wi-Fi — this is the board, not the generator. Falling back to cloud data."
+              data:
+                push:
+                  interruption-level: time-sensitive
+          - action: persistent_notification.create
+            data:
+              title: Generator bridge unreachable
+              message: "The bridge has not answered for 5 minutes. Check its power and Wi-Fi — this is the board, not the generator."
+      - conditions:
+          - condition: trigger
+            id: bus
+        sequence:
+          - action: !input notify
+            data:
+              title: Generator not answering the bridge
+              message: "The bridge is online but the controller has gone quiet on RS-485 for 5 minutes. Local readings are frozen and alarm detection is suppressed. Check the RS-485 pair and termination."
+              data:
+                push:
+                  interruption-level: time-sensitive
+          - action: persistent_notification.create
+            data:
+              title: Generator not answering the bridge
+              message: "The bridge is online but the controller has gone quiet on RS-485 for 5 minutes. Check the RS-485 pair and termination."

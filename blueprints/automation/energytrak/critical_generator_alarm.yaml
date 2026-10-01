@@ -1,0 +1,76 @@
+blueprint:
+  name: "Generator: CRITICAL alarm (shutdown-class fault)"
+  description: >-
+    A shutdown-class fault has asserted: common shutdown, emergency stop, low
+    oil pressure, high coolant temperature, over-speed, electrical trip, failed
+    to stop, magnetic pick-up fault, temperature circuit open — or the cloud's
+    malfunction flag. Only inputs the bridge's commissioning profile marked
+    "ok" (wired and reading normal at rest) are considered, so an input that
+    is not fitted on this controller can never page. Read the fault at the
+    panel: the Modbus map carries the bit, not the message.
+  domain: automation
+  source_url: https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/critical_generator_alarm.yaml
+  input:
+    generator:
+      name: Generator
+      selector:
+        device:
+          integration: energytrak
+    notify:
+      name: Notify service
+      default: notify.notify
+      selector:
+        text: {}
+
+mode: queued
+max: 10
+
+trigger_variables:
+  dev: !input generator
+  fields: >-
+    ['malfunction','common_shutdown','emergency_stop','low_oil_pressure','high_coolant_temperature',
+     'engine_over_speed','electrical_trip','engine_failed_to_stop','magnetic_pick_up_fault','temperature_circuit_open']
+
+triggers:
+  - trigger: template
+    value_template: >-
+      {% set ns = namespace(hit=false) %}
+      {% for e in expand(device_entities(dev)) %}
+        {% if e.attributes.energytrak_field in fields and e.state == 'on'
+              and (e.attributes.alarm_input is not defined or e.attributes.alarm_input == 'ok') %}
+          {% set ns.hit = true %}
+        {% endif %}
+      {% endfor %}
+      {{ ns.hit }}
+
+variables:
+  dev: !input generator
+  fields: >-
+    ['malfunction','common_shutdown','emergency_stop','low_oil_pressure','high_coolant_temperature',
+     'engine_over_speed','electrical_trip','engine_failed_to_stop','magnetic_pick_up_fault','temperature_circuit_open']
+  asserted: >-
+    {% set ns = namespace(n=[]) %}
+    {% for e in expand(device_entities(dev)) %}
+      {% if e.attributes.energytrak_field in fields and e.state == 'on'
+            and (e.attributes.alarm_input is not defined or e.attributes.alarm_input == 'ok') %}
+        {% set ns.n = ns.n + [e.name] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.n | join(', ') }}
+
+actions:
+  - action: !input notify
+    data:
+      title: "CRITICAL: {{ asserted }}"
+      message: "{{ asserted }} is active on the generator. Read the fault at the controller panel — the Modbus map carries the bit but not the message."
+      data:
+        push:
+          interruption-level: critical
+          sound:
+            name: default
+            critical: 1
+            volume: 1.0
+  - action: persistent_notification.create
+    data:
+      title: "CRITICAL: {{ asserted }}"
+      message: "{{ asserted }} is active on the generator. Read the fault at the controller panel."

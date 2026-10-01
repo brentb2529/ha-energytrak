@@ -1,0 +1,48 @@
+blueprint:
+  name: "Generator: started unexpectedly"
+  description: >-
+    The generator has been running for 90 seconds, the grid is healthy, and
+    the controller is not reporting an exercise cycle. Not an alarm — worth a
+    look. A scheduled exercise (either exercise indicator on) is silent here.
+  domain: automation
+  source_url: https://github.com/brentb2529/ha-energytrak/blob/main/blueprints/automation/energytrak/generator_started_unexpectedly.yaml
+  input:
+    generator:
+      name: Generator
+      selector:
+        device:
+          integration: energytrak
+    notify:
+      name: Notify service
+      default: notify.notify
+      selector:
+        text: {}
+
+mode: single
+
+trigger_variables:
+  dev: !input generator
+
+triggers:
+  - trigger: template
+    value_template: >-
+      {% set ents = expand(device_entities(dev)) %}
+      {% set run = ents | selectattr('attributes.energytrak_field','eq','engine_running') | map(attribute='state') | first | default('off') %}
+      {% set out = ents | selectattr('attributes.energytrak_field','eq','utility_power_failure') | map(attribute='state') | first | default('off') %}
+      {% set ex = ents | selectattr('attributes.energytrak_field','in',['exercising','scheduled_exercise_in_progress']) | map(attribute='state') | list %}
+      {{ run == 'on' and out == 'off' and 'on' not in ex }}
+    for:
+      seconds: 90
+
+actions:
+  - action: !input notify
+    data:
+      title: Generator started unexpectedly
+      message: The generator has been running for 90 seconds, the grid is healthy, and the controller is not reporting an exercise cycle. Worth a look.
+      data:
+        push:
+          interruption-level: time-sensitive
+  - action: persistent_notification.create
+    data:
+      title: Generator started unexpectedly
+      message: The generator has been running for 90 seconds, the grid is healthy, and the controller is not reporting an exercise cycle. Worth a look.
